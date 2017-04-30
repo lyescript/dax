@@ -1,0 +1,31 @@
+#!/bin/sh
+
+dir="$(pwd)"
+bin="$0"
+while [ -L "${bin}" ]
+do
+    x="$(readlink "${bin}")"
+    cd "$(dirname "${bin}")"
+    bin="${x}"
+done
+cd "$(dirname "${bin}")"
+home="$(pwd)"
+cd "${dir}"
+
+if [ ! -z "${LUMEN_HOST}" ]
+then
+    host="${LUMEN_HOST}"
+elif node -v > /dev/null 2>&1
+then
+    host=node
+elif luajit -v > /dev/null 2>&1
+then
+    host=luajit
+elif lua -v > /dev/null 2>&1
+then
+    host=lua
+else
+    echo no host found
+fi
+
+LUMEN_HOST="${host}" exec "${home}/lumen" "$@"
