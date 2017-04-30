@@ -1,0 +1,34 @@
+{
+  "name": "dax",
+  "version": "0.0.0",
+  "description": "A Lisp for Lua and JavaScript",
+  "main": "bin/lumen.js",
+  "bin": {
+    "dax": "bin/lumen"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyescript/dax.git"
+  },
+  "keywords": [
+    "lisp",
+    "dax",
+    "lumen",
+    "lycan",
+    "js",
+    "lua",
+    "compiler"
+  ],
+  "author": "Shawn Presser <shawnpresser@gmail.com> (https://github.com/shawwn)",
+  "contributors": [
+    "Scott Bell <scott@sctsm.com> (https://github.com/sctb)"
+  ],
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/lyescript/dax/issues"
+  },
+  "homepage": "https://github.com/lyescript/dax#readme"
+}
