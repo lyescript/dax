@@ -1,4 +1,5 @@
-local reader = require("reader")
+local loading63 = not host47global
+host47global = _G or _ENV
 local function getenv(k, p)
   if string63(k) then
     local i = edge(environment)
@@ -1016,7 +1017,10 @@ end
 function expand(form)
   return(lower(macroexpand(form)))
 end
-local load1 = loadstring or load
+if loading63 then
+  lua47load = load
+end
+local load1 = loadstring or lua47load
 local function run(code)
   local f,e = load1(code)
   if f then

@@ -1,4 +1,14 @@
-(define reader (require 'reader))
+(define loading?
+  (target lua: (not host/global)
+          js: (= (typeof host/global) "undefined")))
+
+(define-global host/global
+  (target
+    lua: (or _G _ENV)
+    js: (if (not (= (typeof global) "undefined")) global
+            (not (= (typeof window) "undefined")) window
+            (not (= (typeof self) "undefined")) self
+          this)))
 
 (define getenv (k p)
   (when (string? k)
@@ -561,10 +571,34 @@
 (define-global expand (form)
   (lower (macroexpand form)))
 
-(target js: (set (get global 'require) require))
-(target js: (define run eval))
+; from Node.js/lib/repl.js
+(target js:
+  (define fix-require ()
+    ; fix require.resolve("./relative")
+    (let ((ok) (guard (set (get module 'filename)
+                           ((get (require 'path) 'resolve) 'repl))))
+      (unless ok
+        ; path.resolve('repl') fails when the current working
+        ; directory has been deleted. Fall back to the directory name
+        ; of the absolute executable path.
+        (let dir ((get (require 'path) 'dirname) (get process 'execPath))
+          (set (get module 'filename)
+               ((get (require 'path) 'resolve) dir 'repl)))))
+    ; fix require to work properly with node_modules folders
+    (set (get module 'paths)
+         ((get (require 'module) '_nodeModulePaths)
+          (get module 'filename)))))
 
-(target lua: (define load1 (or loadstring load)))
+(when loading?
+  (target
+    js: (define-global js/eval eval)
+    lua: (define-global lua/load load))
+  (target js: (fix-require)))
+
+(target js: (set (get global 'require) require))
+(target js: (define run js/eval))
+
+(target lua: (define load1 (or loadstring lua/load)))
 (target lua:
   (define run (code)
     (let |f,e| (load1 code)
