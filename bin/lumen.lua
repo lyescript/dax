@@ -1049,9 +1049,9 @@ setenv("when-compiling", {_stash = true, macro = function (...)
   local body = unstash({...})
   return(eval(join({"do"}, body)))
 end})
+local system = require("system")
 local reader = require("reader")
 local compiler = require("compiler")
-local system = require("system")
 local function eval_print(form)
   local _x = nil
   local _msg = nil
@@ -1220,4 +1220,8 @@ local function main()
     end
   end
 end
-main()
+if true then
+  main()
+else
+  return({system = system, reader = reader, compiler = compiler, main = main})
+end
