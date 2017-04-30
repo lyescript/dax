@@ -10,6 +10,12 @@ do
 done
 cd "$(dirname "${bin}")"
 home="$(pwd)"
+npm="$(which npm)"
+if [ ! -z "${npm}" ]
+then
+    cd "$(dirname "${npm}")"/../lib
+    npm="$(pwd)/node_modules"
+fi
 cd "${dir}"
 
 if [ ! -z "${LUMEN_HOST}" ]
@@ -31,10 +37,10 @@ fi
 case $host in
     node*)
         code=lumen.js
-        export NODE_PATH="$NODE_PATH:${home}:${dir}/lib";;
+        export NODE_PATH="$NODE_PATH:${home}:${dir}/lib:${npm}";;
     *)
         code=lumen.lua
-        export LUA_PATH="$LUA_PATH;${home}/?.lua;${dir}/lib/?.lua;;";;
+        export LUA_PATH="$LUA_PATH;${home}/?.lua;${dir}/lib/?.lua;${npm}/?/init.lua;${npm}/?/?.lua;${npm}/?.lua;;";;
 esac
 
 exec ${host} "${home}/${code}" "$@"

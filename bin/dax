@@ -12,20 +12,9 @@ cd "$(dirname "${bin}")"
 home="$(pwd)"
 cd "${dir}"
 
-if [ ! -z "${LUMEN_HOST}" ]
+if [ -z "${LUMEN_HOST}" ]
 then
-    host="${LUMEN_HOST}"
-elif node -v > /dev/null 2>&1
-then
-    host=node
-elif luajit -v > /dev/null 2>&1
-then
-    host=luajit
-elif lua -v > /dev/null 2>&1
-then
-    host=lua
-else
-    echo no host found
+    export LUMEN_HOST="node"
 fi
 
-LUMEN_HOST="${host}" exec "${home}/lumen" "$@"
+exec "${home}/lumen" "$@"
