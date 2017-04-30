@@ -1,6 +1,6 @@
 {
   "name": "dax",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Lisp for Lua and JavaScript",
   "main": "bin/lumen.js",
   "bin": {
