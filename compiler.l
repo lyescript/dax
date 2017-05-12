@@ -750,7 +750,10 @@
     (cat s "}")))
 
 (define-special %literal args
-  (apply cat (map compile args)))
+  (with s ""
+    (step x args
+      (let x1 (compile x)
+        (cat! s x1)))))
 
 (export run
         eval
