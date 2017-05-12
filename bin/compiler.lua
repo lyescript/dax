@@ -1280,4 +1280,8 @@ setenv("%object", {_stash = true, special = function (...)
   end
   return(s .. "}")
 end})
+setenv("%literal", {_stash = true, special = function (...)
+  local args = unstash({...})
+  return(apply(cat, map(compile, args)))
+end})
 return({run = run, eval = eval, expand = expand, compile = compile})

@@ -1378,6 +1378,10 @@ setenv("%object", {_stash: true, special: function () {
   }
   return(s + "}");
 }});
+setenv("%literal", {_stash: true, special: function () {
+  var args = unstash(Array.prototype.slice.call(arguments, 0));
+  return(apply(cat, map(compile, args)));
+}});
 exports.run = run;
 exports.eval = eval;
 exports.expand = expand;
