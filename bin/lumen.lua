@@ -1147,8 +1147,8 @@ local function usage()
   print(" -t <target>\tTarget language (default: lua)")
   return(print(" -e <expr>\tExpression to evaluate"))
 end
-local function main()
-  local arg = hd(system.argv)
+local function main(argv)
+  local arg = hd(argv)
   if arg and script_file63(arg) then
     return(load(arg))
   else
@@ -1160,7 +1160,6 @@ local function main()
       local output = nil
       local target1 = nil
       local expr = nil
-      local argv = system.argv
       local i = 0
       while i < _35(argv) do
         local a = argv[i + 1]
@@ -1220,8 +1219,4 @@ local function main()
     end
   end
 end
-if true then
-  main()
-else
-  return({system = system, reader = reader, compiler = compiler, main = main})
-end
+return({system = system, reader = reader, compiler = compiler, main = main})

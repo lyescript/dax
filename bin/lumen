@@ -36,10 +36,10 @@ fi
 
 case $host in
     node*)
-        code=lumen.js
+        code=boot.js
         export NODE_PATH="$NODE_PATH:${home}:${dir}/lib:${npm}";;
     *)
-        code=lumen.lua
+        code=boot.lua
         export LUA_PATH="$LUA_PATH;${home}/?.lua;${dir}/lib/?.lua;${npm}/?/init.lua;${npm}/?/?.lua;${npm}/?.lua;;";;
 esac
 

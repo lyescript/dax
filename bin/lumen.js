@@ -1247,8 +1247,8 @@ var usage = function () {
   print(" -t <target>\tTarget language (default: lua)");
   return(print(" -e <expr>\tExpression to evaluate"));
 };
-var main = function () {
-  var arg = hd(system.argv);
+var main = function (argv) {
+  var arg = hd(argv);
   if (arg && script_file63(arg)) {
     return(load(arg));
   } else {
@@ -1260,7 +1260,6 @@ var main = function () {
       var output = undefined;
       var target1 = undefined;
       var expr = undefined;
-      var argv = system.argv;
       var i = 0;
       while (i < _35(argv)) {
         var a = argv[i];
@@ -1320,11 +1319,7 @@ var main = function () {
     }
   }
 };
-if (module === require.main) {
-  main();
-} else {
-  exports.system = system;
-  exports.reader = reader;
-  exports.compiler = compiler;
-  exports.main = main;
-}
+exports.system = system;
+exports.reader = reader;
+exports.compiler = compiler;
+exports.main = main;

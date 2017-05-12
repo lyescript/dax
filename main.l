@@ -64,8 +64,8 @@
   (print " -t <target>\tTarget language (default: lua)")
   (print " -e <expr>\tExpression to evaluate"))
 
-(define main ()
-  (let arg (hd (get system 'argv))
+(define main (argv)
+  (let arg (hd argv)
     (if (and arg (script-file? arg))
         (load arg)
         (or (= arg "-h")
@@ -75,8 +75,7 @@
             input nil
             output nil
             target1 nil
-            expr nil
-            argv (get system 'argv))
+            expr nil)
         (for i (# argv)
           (let a (at argv i)
             (if (or (= a "-c") (= a "-o") (= a "-t") (= a "-e"))
@@ -98,9 +97,7 @@
                     (print code)
                   ((get system 'write-file) output code)))))))))
 
-(if (target lua: true js: (= module (get require 'main)))
-    (main)
-  (export system
-          reader
-          compiler
-          main))
+(export system
+        reader
+        compiler
+        main)

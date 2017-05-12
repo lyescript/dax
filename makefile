@@ -11,6 +11,7 @@ OBJS :=	obj/runtime.o	\
 	obj/main.o
 
 MODS := bin/lumen.x	\
+	bin/boot.x	\
 	bin/reader.x	\
 	bin/compiler.x	\
 	bin/system.x
