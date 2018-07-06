@@ -41,7 +41,8 @@
       (variable? x)))
 
 (define-global quoted (form)
-  (if (string? form) (escape form)
+  (if (sym? form) (escape (str form))
+      (string? form) (escape form)
       (atom? form) form
       (keys? form)
       `(%object ,@(mapo quoted form))
@@ -67,7 +68,7 @@
 
 (define-global default-assignment? (x)
   (and (not (atom? x))
-       (= (hd x) default-assignment-op)))
+       (eq (hd x) default-assignment-op)))
 
 (define-global bind (lh rh)
   (if (atom? lh) `(,lh ,rh)
@@ -185,7 +186,6 @@
   (with l (macroexpand-1 form)
     (when (meta? form)
       (meta! l (meta form)))))
-  ; (with-meta  (meta form)))
 
 (define quasiquote-list (form depth)
   (let xs (list '(list))
@@ -227,7 +227,7 @@
 
 (define-global quasiexpand (form depth)
   (if (quasiquoting? depth)
-      (if (atom? form) (list 'quote form) ;(list 'quote (resolve form))
+      (if (atom? form) (list 'quote form)
           ;; unquote
           (and (can-unquote? depth)
                (eq (hd form) 'unquote))
@@ -281,6 +281,8 @@
            (> (# x) 1)
            (= (code x 0) ?.)
            (not (= (code x 1) ?.)))
+      (and (sym? x)
+           (accessor? (str x)))
       (and (obj? x)
            (eq (hd x) '%brackets))))
 
@@ -293,9 +295,6 @@
             (fn (_ x) (x (.to-upper-case))))
     name))
 
-(define-global sym? (x)
-  (instanceof x (_G .Sym)))
-
 (define-global fqn? (x)
   (if (sym? x)
       (x (.fqn?))
@@ -306,13 +305,15 @@
                 (not (= i (edge x))))))))
 
 (define-global namespace (x)
-  (if (sym? x)
+  (if (nil? x) x
+      (has? x .ns)
       (x .ns)
     (when (fqn? x)
       (clip x 0 (search x "/")))))
 
 (define-global name (x)
-  (if (sym? x)
+  (if (nil? x) x
+      (has? x 'name)
       (x .name)
       (fqn? x)
       (clip x (+ (search x "/") 1))
@@ -327,13 +328,15 @@
     (= x y)))
 
 (define fqn (id x)
-  (if (= (namespace id) 'js)
+  (if (eq (namespace id) 'js)
       (name id)
   `(_G .Namespace .find ,(escape (namespace id))
        .intern ,(escape (name id))
        (.deref ,x))))
 
 (define id (id raw?)
+  (when (sym? id)
+    (set id (str id)))
   (if (fqn? id)
       (cat "(" (compile (fqn id)) ")")
     (let (id (camel-case id)
@@ -353,10 +356,14 @@
           id1))))
 
 (define-global valid-id? (x)
-  (and (some? x) (= x (id x))))
+  (if (sym? x)
+      (valid-id? (str x))
+    (and (some? x) (= x (id x)))))
 
 (let (names (obj))
   (define-global unique (x)
+    (when (sym? x)
+      (set x (str x)))
     (if (string? x)
         (let x (id x)
           (if (names [x])
@@ -368,6 +375,8 @@
       x)))
 
 (define-global key (k)
+  (when (sym? k)
+    (set k (str k)))
   (if (and (string? k)
            (valid-id? k))
       k
@@ -399,7 +408,7 @@
     (or: (js: ,"||"))))
 
 (define unary? (form)
-  (and (two? form) (in? (hd form) '(not -))))
+  (and (two? form) (in? (name (hd form)) '(not -))))
 
 (define index (k)
   k)
@@ -412,6 +421,8 @@
   0)
 
 (define getop (op)
+  (unless (string? op)
+    (set op (str op)))
   (find (fn (level)
           (let x (level [op])
             (if (= x true) op
@@ -461,6 +472,8 @@
                    c))))))
 
 (define-global accessor (x)
+  (when (sym? x)
+    (set x (str x)))
   (let prop (compile-atom (clip x 1) true)
     (if (valid-id? prop)
         (cat "." prop)
@@ -477,7 +490,7 @@
       (= x inf) "inf"
       (= x -inf) "-inf"
       (number? x) (cat x "")
-      (x .compile) (cat x "")
+      (x .compile) (x (.compile raw?))
     (error (cat "Cannot compile atom: " (str x)))))
 
 (define terminator (stmt?)
@@ -600,7 +613,7 @@
                    ,(lower-body (list then) tail?)
                    ,@(if (is? else) (list (lower-body (list else) tail?)))))
       (let-unique (e)
-        (add hoist `(%local ,e))
+        (add hoist `(%local ,e nil))
         (add hoist
              `(%if ,(lower cond hoist)
                    ,(lower `(%set ,e ,then))
@@ -699,7 +712,7 @@
     (if (some? form) form)))
 
 (define pairwise? (form)
-  (in? (hd form) '(< <= = >= >)))
+  (in? (name (hd form)) '(< <= = >= >)))
 
 (define lower-pairwise (form)
   (if (pairwise? form)
@@ -746,7 +759,7 @@
           (or (eq x '%local-function)
               (eq x '%global-function))
           (lower-definition x args hoist)
-          (in? x '(and or))
+          (in? (name x) '(and or))
           (lower-short x args hoist)
           (statement? x) (lower-special form hoist)
         (lower-call form hoist)))))
@@ -941,7 +954,7 @@
               (let ((name v) x)
                 (cat! s c ind (key name) sep (compile v)))
             (let ((prefix name args rest: body) x
-                  prefix (if (in? prefix '(define def)) "" prefix)
+                  prefix (if (in? (dax.compiler/name prefix) '(define def)) "" prefix)
                   h (if (some? body)
                         (compile-function args `(do ,@body) name: (key name) prefix: prefix)
                       (cat (key name) sep (compile args))))

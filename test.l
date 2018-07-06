@@ -5,8 +5,7 @@
 (define tests (list))
 
 (define equal? (a b)
-  (if (atom? a) (= a b)
-    (= (str a) (str b))))
+  (= (str a) (str b)))
 
 (when-compiling
   (define-macro test (x msg)

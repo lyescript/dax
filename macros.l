@@ -1,11 +1,8 @@
 (ns dax.macros)
 
-(define-macro current-ns args
-  `(_G (.*ns* ,@args)))
-
 (define-macro ns (name)
   (set (_G .ns-prefix) name)
-  `(current-ns ,(escape name)))
+  `(_G .current-ns ',name))
 
 (define-macro deref (ns name rest: args)
   `((_G .Namespace .find ',ns) (.intern ',name) (.deref) ,@args))
@@ -39,9 +36,10 @@
 
 (define-macro case (expr rest: clauses)
   (let-unique (x)
-    (let (eq (fn (_) (if (eq _ 'else) `true `(= ,_ ,x)))
+    (let (eq (fn (_) (if (dax.compiler/eq _ 'else) `true `(= ,_ ,x)))
           cl (fn ((a rest: body))
-               (if (or (string? a) (number? a) (eq (hd a) 'quote)) (list (eq a) `(do ,@body))
+               (if (or (sym? a) (string? a) (number? a) (dax.compiler/eq (hd a) 'quote))
+                   (list (eq a) `(do ,@body))
                    (one? a) (list (eq (hd a)) `(do ,@body))
                    (> (# a) 1) (list `(or ,@(map eq a)) `(do ,@body)))))
       `(let ,x ,expr
@@ -96,7 +94,8 @@
   `(%setenv ,name special special: (fn ,args ,@body) ,@(keys body)))
 
 (define-macro define-symbol-macro (name expansion)
-  `(%setenv ,name symbol symbol: ',expansion))
+  ; `(%setenv ,name symbol symbol: ',expansion))
+  `(void (setenv ',name symbol: ',expansion)))
 
 (define-macro define-reader ((char s) rest: body)
   `(set (read-table [,char]) (fn (,s) ,@body)))
@@ -161,8 +160,8 @@
 
 (define-macro apply (f rest: args)
   (if (> (# args) 1)
-      `(%call apply ,f (join (list ,@(almost args)) ,(last args)))
-      `(%call apply ,f ,@args)))
+      `(%call (_G .apply) ,f (join (list ,@(almost args)) ,(last args)))
+      `(%call (_G .apply) ,f ,@args)))
 
 (define-macro guard (expr)
   `((fn () (%try (list true ,expr)))))
@@ -254,7 +253,8 @@
     `(%condition-case ,e
        (do ,@(map (fn (x)
                     (unless (and (obj? x)
-                                 (in? (hd x) '(catch finally)))
+                                 (or (eq (hd x) 'catch)
+                                     (eq (hd x) 'finally)))
                       x))
                   body))
        ,@(map (fn (x)

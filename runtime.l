@@ -31,9 +31,9 @@
           (cat (this .ns) "/" (this .name))
         (this .name)))
     (define to-string ()
-      (cat "" this))
+      (str (cat "" this)))
     (define (Symbol .for "str") ()
-      (cat "" this))
+      (this (.to-string)))
     (define compile ()
       (compile (cat "" this)))
     (define fqn? ()
@@ -92,7 +92,7 @@
        (define (Symbol .to-primitive) (hint)
          (this (.fqn)))
        (define to-string ()
-         (cat "" this))
+         (str (cat "" this)))
        (define (Symbol .for "str") ()
          (this (.to-string)))
        ))
@@ -114,12 +114,12 @@
       (list (%spread (Namespace (.namespaces) (.values)))))
     
     (static sym (s)
-      (unless (or (s .ns) (s .name))
-        (let i (s .index-of "/")
-          (if (or i (= i 0))
-              (set s (new _G .Sym nil (s .substr 0 i) (s .substr (+ i 1))))
-            (set s (new _G .Sym nil nil s)))))
-      s)
+      (if (= (typeof s) "string")
+          (let i (s .index-of "/")
+            (if i
+                (set s (new _G .Sym nil (s .substr 0 i) (s .substr (+ i 1))))
+              (set s (new _G .Sym nil nil s))))
+      s))
 
     (static find (name)
       (Namespace (.namespaces) .get (Namespace .sym name)))
@@ -179,6 +179,12 @@
 
 (set (_G .*ns*)
      (_G .Compiler .currentNS))
+
+(define-global current-ns (x)
+  (if (is? x)
+      (_G (.*ns* x))
+    (_G (.*ns*))))
+
 (ns dax.lang)
 (ns dax.reader)
 (ns dax.compiler)
@@ -238,11 +244,14 @@
 (define-global array? (x)
   (Array .is-array x))
 
+(define-global sym? (x)
+  (instanceof x (_G .Sym)))
+
 (define-global atom? (x)
-  (or (nil? x) (string? x) (number? x) (boolean? x) (symbol? x) (instanceof x Sym)))
+  (or (nil? x) (string? x) (number? x) (boolean? x) (symbol? x) (sym? x)))
 
 (define-global metable? (x)
-  (is? x))
+  (obj? x))
 
 (define-global meta (l)
   (when (metable? l)
@@ -523,9 +532,11 @@
     (cat s1 "\"")))
 
 (define-global simple-id? (x)
-  (and (string? x)
-       (let ((ok v) (guard (read-string x)))
-         (and ok (= v x)))))
+  (if (sym? x)
+      (simple-id? (str x))
+    (and (string? x)
+         (let ((ok v) (guard (read-string x)))
+           (and ok (eq v x))))))
 
 (define-global str (x stack)
   (if (nil? x) "nil"
@@ -564,6 +575,8 @@
   (apply f args))
 
 (define-global setenv (k rest: keys)
+  (when (sym? k)
+    (set k (str k)))
   (when (string? k)
     (let (frame (if (keys .toplevel)
                     (hd (_G .environment))
@@ -574,6 +587,8 @@
       (set (frame [k]) entry))))
 
 (define-global fetchenv (k rest: keys)
+  (when (sym? k)
+    (set k (str k)))
   (when (string? k)
     (let (frame (if (keys .toplevel)
                     (hd (_G .environment))
@@ -581,7 +596,9 @@
           entry (or (frame [k]) (obj)))
       (set (frame [k]) entry))))
 
-(define-global assignenv (k p)
+(define-global assignenv (k p toplevel?)
+  (when (sym? k)
+    (set k (str k)))
   (when (string? k)
     (let (frame (if (keys .toplevel)
                     (hd (_G .environment))
@@ -590,16 +607,21 @@
       (set (frame [k]) p)
       k)))
 
-(define-global putenv (name kind x (o props (obj)))
-  (let (p (Object (.assign (obj) props (%object [kind] x)))
-        ns (current-ns)
-        full (cat (ns .name) "/" name)
-        val (ns .intern name (.deref p)))
-    (set (_G .environment [(edge (_G .environment))] [full]) p)
-    p))
+(define-global putenv (name kind x (o props (obj)) toplevel?)
+  (when (sym? name)
+    (set name (str name)))
+  (when (string? name)
+    (let (p (Object (.assign (obj) props (%object [kind] x)))
+          ns (current-ns)
+          full (cat (ns .name) "/" name)
+          val (ns .intern name (.deref p)))
+      (set (_G .environment [(edge (_G .environment))] [full]) p)
+      p)))
 
-(define-global setenv% (name kind x props)
-  ((current-ns) .intern (assignenv name (putenv name kind x props))))
+(define-global setenv% (name kind x props toplevel?)
+  (let e (assignenv name (putenv name kind x props toplevel?) toplevel?)
+    (when e
+      ((current-ns) .intern e))))
 
 (define-global print (x)
   (console .log x))

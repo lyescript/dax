@@ -93,7 +93,8 @@
   (if (= str "true") true
       (= str "false") false
     (let n (maybe-number str)
-      (if (real? n) n str)))))
+      (if (real? n) n
+        (Namespace .sym str))))))
 
 (define-reader ("(" s)
   (with r nil
@@ -105,9 +106,10 @@
         (let c (peek-char s)
           (if (= c ")") (do (read-char s) (set r l))
               (nil? c) (set r (expected s ")"))
-            (let x (read s)
-              (if (key? x)
-                  (let (k (clip x 0 (edge x))
+            (let (x (read s)
+                  x1 (if (sym? x) (cat "" x) x))
+              (if (key? x1)
+                  (let (k (clip x1 0 (edge x1))
                         v (read s))
                     (set (l [k]) v))
                 (add l x))))))
