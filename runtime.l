@@ -1,3 +1,146 @@
+(set is?
+     (fn (x) (not (or (= x nil) (= x null)))))
+(set (_G .Mapping)
+  (class Mapping
+    (define constructor ()
+      (set (this .map) (Object .create null))
+      this)
+    (define get (k)
+      (this .map [k]))
+    (define set (k v)
+      (set (this .map [k]) v))
+    (define has (k)
+      (this .map .has-own-property k))
+    (get (Symbol .iterator) ()
+      (this .map [(Symbol .iterator)]))
+    (define values ()
+      (with l (list)
+        (each (k v) (this .map)
+          (l .push v))))))
+
+(set (_G .Sym)
+  (class Sym
+    (define constructor (meta ns name)
+      (set (this .meta) meta
+           (this .ns) ns
+           (this .name) name)
+      this)
+    (define to-string ()
+      (if (this .ns)
+          (cat (this .ns) "/" (this .name))
+        (this .name)))))
+
+(set (_G .Unbound)
+     (class Unbound))
+
+(set (_G .Var)
+     (class Var
+       (define constructor (ns sym (o root (new (_G .Unbound this))))
+         (set (this .ns) ns
+              (this .sym) sym
+              (this .root) root)
+         this)
+       (define has-root ()
+         (not (instanceof (this .root) (_G .Unbound))))
+       (define bind-root (root)
+         (set (this .root) root))
+       (define unbind-root ()
+         (set (this .root) (new Unbound this)))
+       (define deref ()
+         (let b (this (.get-thread-binding))
+           (if b (b .val) (this .root))))
+       (define get ()
+         (this (.deref)))
+       (define set (val)
+         (let b (this (.get-thread-binding))
+           (when b
+             (return (set (b .val) val))))
+         (error (cat "Can't change/establish root binding of: " (this (.fqn)) " with set")))
+       (define get-thread-binding ()
+         (getenv (this (.fqn))))
+       (static push-thread-bindings (bindings)
+         (_G .environment .push bindings))
+       (static pop-thread-bindings()
+         (_G .environment (.pop)))
+       (define fqn ()
+         (cat "#'" (this .ns .name) "/" (this .sym .name)))
+       (define to-string ()
+         (this (.fqn)))
+       (define str ()
+         (this (.to-string)))
+       ))
+
+(set (_G .Namespace)
+  (class Namespace
+    (define constructor (name)
+      (set (this .name) name
+           (this .mappings) (new _G .Mapping)
+           (this .aliases) (new _G .Mapping))
+      (Namespace (.namespaces) .set name this)
+      this)
+
+    (static namespaces ()
+      (or (Namespace ._namespaces)
+          (set (Namespace ._namespaces) (new _G .Mapping))))
+
+    (static all ()
+      (list (%spread (Namespace (.namespaces) (.values)))))
+    
+    (static sym (s)
+      (unless (or (s .ns) (s .name))
+        (let i (s .index-of "/")
+          (if (or i (= i 0))
+              (set s (new _G .Sym nil (s .substr 0 i) (s .substr (+ i 1))))
+            (set s (new _G .Sym nil nil s)))))
+      s)
+
+    (static find (name)
+      (Namespace (.namespaces) .get (Namespace .sym name)))
+
+    (static find-or-create (name)
+      (let ns (Namespace (.namespaces) .get name)
+        (or ns
+            (new Namespace name))))
+
+    (define intern (sym)
+      (set sym (Namespace .sym sym))
+      (when (sym .ns)
+        (error "Can't intern namespace-qualified symbol"))
+      (let (m (this .mappings)
+            o nil
+            v nil)
+        (while (not (set o (m .get sym)))
+          (when (not v)
+            (set v (new _G .Var this sym)))
+          (m .set sym v))
+        (when (and (instanceof o (_G .Var))
+                   (= (o .ns) this))
+          (return o))
+        (when (not v)
+          (set v (new _G .Var this sym)))
+        (this .warn-or-fail-on-replace sym o v)
+        (m .set sym v)
+        v))
+
+    (define warn-or-fail-on-replace (sym o v)
+      (when (instanceof o (_G .Var))
+        (let ns (o .ns)
+          (when (or (= ns this)
+                     (and (instanceof v (_G .Var))
+                          (= (v .ns) (RT .DAX_NS))))
+            (return))
+          (unless (= ns (RT .DAX_NS))
+            (error (cat (str sym) " already refers to: " (str o) " in namespace: " (str name))))))
+      (print (cat (str sym) " already refers to: " (str o) " in namespace: " (str name) ", being replaced by: " + (str v))))
+    ))
+
+(set (_G .*ns*) (_G .Namespace .find-or-create "dax.core"))
+(_G .Namespace .find-or-create "dax.lang")
+(_G .Namespace .find-or-create "dax.reader")
+(_G .Namespace .find-or-create "dax.compiler")
+(_G .Namespace .find-or-create "dax.system")
+
+
 (define-global nil? (x)
   (or (= x nil) (= x null)))
 
@@ -309,6 +452,7 @@
 
 (define-global str (x stack)
   (if (nil? x) "nil"
+      (x .str) (x .str stack)
       (nan? x) "nan"
       (= x inf) "inf"
       (= x -inf) "-inf"

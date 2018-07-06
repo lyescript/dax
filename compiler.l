@@ -861,7 +861,7 @@
     (cat s "}")))
 
 (define-special %table forms
-  (let (s "{\n" c "" sep ": " comma (either (forms .comma) ", "))
+  (let (s "{\n" c "" sep ": " comma (either (forms .comma) (escape ", ")))
     (with-indent
       (let ind (indentation)
         (step x forms
