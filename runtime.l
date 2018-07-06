@@ -1,5 +1,6 @@
 (set is?
      (fn (x) (not (or (= x nil) (= x null)))))
+
 (set (_G .Mapping)
   (class Mapping
     (define constructor ()
@@ -42,13 +43,23 @@
          this)
        (define has-root ()
          (not (instanceof (this .root) (_G .Unbound))))
-       (define bind-root (root)
-         (set (this .root) root))
+       (define bind-root (root getter setter)
+         (set (this .getter) getter
+              (this .setter) setter
+              (this .root) root))
        (define unbind-root ()
+         (wipe (this .getter))
+         (wipe (this .setter))
          (set (this .root) (new Unbound this)))
-       (define deref ()
-         (let b (this (.get-thread-binding))
-           (if b (b .val) (this .root))))
+       (define deref (x)
+         (if (= (arguments .length) 0)
+             (let b (this (.get-thread-binding))
+               (if b (b .val)
+                   (this .getter) (this (.getter))
+                 (this .root)))
+             (this .setter)
+             (this .setter x)
+           (set (this .root) x)))
        (define get ()
          (this (.deref)))
        (define set (val)
@@ -57,7 +68,7 @@
              (return (set (b .val) val))))
          (error (cat "Can't change/establish root binding of: " (this (.fqn)) " with set")))
        (define get-thread-binding ()
-         (getenv (this (.fqn))))
+         (_G .environment [0] [(this (.fqn))]))
        (static push-thread-bindings (bindings)
          (_G .environment .push bindings))
        (static pop-thread-bindings()
@@ -66,7 +77,7 @@
          (cat "#'" (this .ns .name) "/" (this .sym .name)))
        (define to-string ()
          (this (.fqn)))
-       (define str ()
+       (define (Symbol .for "str") ()
          (this (.to-string)))
        ))
 
@@ -134,12 +145,38 @@
       (print (cat (str sym) " already refers to: " (str o) " in namespace: " (str name) ", being replaced by: " + (str v))))
     ))
 
-(set (_G .*ns*) (_G .Namespace .find-or-create "dax.core"))
-(_G .Namespace .find-or-create "dax.lang")
-(_G .Namespace .find-or-create "dax.reader")
-(_G .Namespace .find-or-create "dax.compiler")
-(_G .Namespace .find-or-create "dax.system")
+(set (_G .RT)
+     (_G .Namespace .find-or-create "RT")
+     (_G .RT .CURRENT_NS)
+     (_G .RT .intern "CURRENT_NS"))
+(_G .RT .CURRENT_NS .bind-root (_G .Namespace .find-or-create "dax.core"))
 
+(set (_G .Compiler)
+     (class Compiler
+       (static NS ()
+         (_G .RT .CURRENT_NS))
+       (static currentNS (x)
+         (if (= (arguments .length) 0)
+             (_G .Compiler (.NS) (.deref))
+            (let ns (_G .Namespace .find-or-create x)
+              (_G .Compiler (.NS) .bind-root ns))))))
+
+(set (_G .*ns*)
+     (_G .Compiler .currentNS))
+(ns dax.lang)
+(ns dax.reader)
+(ns dax.compiler)
+(ns dax.system)
+(ns dax.main)
+(ns dax.core)
+
+(define-global environment (_G .environment))
+
+(define-global Namespace (_G .Namespace))
+(define-global Sym (_G .Sym))
+(define-global Var (_G .Var))
+(define-global Unbound (_G .Unbound))
+(define-global Mapping (_G .Mapping))
 
 (define-global nil? (x)
   (or (= x nil) (= x null)))
@@ -452,7 +489,8 @@
 
 (define-global str (x stack)
   (if (nil? x) "nil"
-      (x .str) (x .str stack)
+      (x [(Symbol .for "str")])
+      (x [(Symbol .for "str")] stack)
       (nan? x) "nan"
       (= x inf) "inf"
       (= x -inf) "-inf"

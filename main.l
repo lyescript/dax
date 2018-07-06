@@ -1,3 +1,5 @@
+(ns dax.main)
+
 (define reader (_G .reader))
 (define compiler (_G .compiler))
 (define system (_G .system))
@@ -13,7 +15,7 @@
 
 (define repl ()
   (let buf ""
-    (define rep1 (s)
+    (%local-function rep1 (s)
       (cat! buf s)
       (let (more (list)
             form (reader .read-string buf more))

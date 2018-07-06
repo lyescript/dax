@@ -1,3 +1,17 @@
+(ns dax.macros)
+
+(define-macro current-ns args
+  `(_G (.*ns* ,@args)))
+
+(define-macro ns (name)
+  `(current-ns ,(escape name)))
+
+(define-macro deref (ns name rest: args)
+  `((_G .Namespace .find ',ns) (.intern ',name) (.deref) ,@args))
+
+(define-macro setq (ns name value)
+  `((_G .Namespace .find ',ns) (.intern ',name) (.deref ,value)))
+
 (define-macro quote (form)
   (quoted form))
 
@@ -83,19 +97,24 @@
 (define-macro define-reader ((char s) rest: body)
   `(set (read-table [,char]) (fn (,s) ,@body)))
 
+(define-macro alter-definition (name)
+  `((current-ns) .intern ',name .bind-root ,name (fn () ,name) (fn (x) (set ,name x))))
+
 (define-macro define (name x rest: body)
   (setenv name variable: true)
-  (if (some? body)
-      `(%local-function ,name ,@(bind* x body))
-    `(%local ,name ,x)))
+  (let form (if (some? body)
+                `(%local-function ,name ,@(bind* x body))
+                `(%local ,name ,x))
+    `(do ,form
+         (alter-definition ,name))))
 
 (define-macro define-global (name x rest: body)
   (setenv name toplevel: true variable: true)
-  (if (some? body)
-      `(do (%global-function ,name ,@(bind* x body))
-           (%set (_G ,(cat "." name)) ,name))
-    `(do (%set ,name ,x)
-         (%set (_G ,(cat "." name)) ,name))))
+  `(do ,(if (some? body)
+            `(%global-function ,name ,@(bind* x body))
+          `(%set ,name ,x))
+       (alter-definition ,name)
+       (%set (_G ,(cat "." name)) ,name)))
 
 (define-macro with-frame body
   (let-unique (x)
@@ -134,7 +153,7 @@
        ,@body)))
 
 (define-macro fn (args rest: body)
-  `(%function ,@(bind* args body)))
+  `(%function ,@(bind* args body) ,@(keys body)))
 
 (define-macro apply (f rest: args)
   (if (> (# args) 1)

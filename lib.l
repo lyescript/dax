@@ -1,6 +1,6 @@
 
-(define create (globals)
-  (define _G (Object .assign (obj) (or globals (obj))))
+(%local-function create (globals)
+  (%local _G (Object .assign (obj) (or globals (obj))))
   (set (_G ._G) _G)
   (set (_G .environment) (list (obj)))
   (when-compiling

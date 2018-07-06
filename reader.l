@@ -1,3 +1,5 @@
+(ns dax.reader)
+
 (define-global delimiters (set-of "{" "}" "[" "]" "(" ")" ";" "\r" "\n"))
 (define-global whitespace (set-of " " "\t" "\r" "\n"))
 

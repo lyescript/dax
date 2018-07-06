@@ -1,3 +1,5 @@
+(ns dax.compiler)
+
 (define-global getenv (k p)
   (when (string? k)
     (let i (edge (_G .environment))
@@ -82,7 +84,7 @@
 
 (define-global bind* (args body)
   (let args1 (list)
-    (define rest (r)
+    (%local-function rest (r)
       (set (args1 .rest) r)
       `(unstash ,r))
     (if (atom? args)
@@ -272,22 +274,45 @@
             (fn (_ x) (x (.to-upper-case))))
     name))
 
+(define fqn? (x)
+  (and (string? x)
+       (not (string-literal? x))
+       (let i (search x "/")
+         (and (is? i)
+              (not (= i (edge x)))))))
+
+(define namespace (x)
+  (when (fqn? x)
+    (clip x 0 (search x "/"))))
+
+(define name (x)
+  (if (fqn? x)
+      (clip x (+ (search x "/") 1))
+    x))
+
+(define fqn (id x)
+  `(_G .Namespace .find ,(escape (namespace id))
+       .intern ,(escape (name id))
+       (.deref ,x)))
+
 (define id (id raw?)
-  (let (id (camel-case id)
-        id1 (if (and (not raw?) (number-code? (code id 0))) "_" ""))
-    (for i (# id)
-      (let (c (char id i)
-            n (code c)
-            c1 (if (and (= c "-")
-                        (not (= id "-")))
-                   "_"
-                   (valid-code? n) c
-                   (= i 0) (cat "_" n)
-                 n))
-        (cat! id1 c1)))
-    (if (and (not raw?) (reserved? id1))
-        (cat "_" id1)
-        id1)))
+  (if (fqn? id)
+      (cat "(" (compile (fqn id)) ")")
+    (let (id (camel-case id)
+          id1 (if (and (not raw?) (number-code? (code id 0))) "_" ""))
+      (for i (# id)
+        (let (c (char id i)
+              n (code c)
+              c1 (if (and (= c "-")
+                          (not (= id "-")))
+                     "_"
+                     (valid-code? n) c
+                     (= i 0) (cat "_" n)
+                   n))
+          (cat! id1 c1)))
+      (if (and (not raw?) (reserved? id1))
+          (cat "_" id1)
+          id1))))
 
 (define-global valid-id? (x)
   (and (some? x) (= x (id x))))
@@ -620,7 +645,7 @@
 
 (define lower-function (args)
   (let ((a rest: body) args)
-    `(%function ,a ,(lower-body body true))))
+    `(%function ,a ,(lower-body body true) ,@(keys args))))
 
 (define lower-definition (kind args hoist)
   (let ((name args rest: body) args)
@@ -778,8 +803,8 @@
 (define-special break () stmt: true
   (cat (indentation) "break"))
 
-(define-special %function (args body)
-  (compile-function args body infix: "=>"))
+(define-special %function (args body infix: infix prefix: prefix)
+  (compile-function args body infix: (if prefix nil "=>") prefix: prefix))
 
 (define-special %global-function (name args body) stmt: true tr: true
   (compile `(%local ,name (%function ,args ,body)) stmt: true))
@@ -830,9 +855,11 @@
     (cat ind keyword id rh)))
 
 (define-special %set (lh rh) stmt: true
-  (let (lh (compile lh)
-        rh (compile (if (nil? rh) 'nil rh)))
-    (cat (indentation) lh " = " rh)))
+  (if (fqn? lh)
+      (compile (fqn lh rh))
+    (let (lh (compile lh)
+          rh (compile (if (nil? rh) 'nil rh)))
+      (cat (indentation) lh " = " rh))))
 
 (define-special get (t k)
   (let (t1 (compile t)
