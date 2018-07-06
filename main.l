@@ -112,8 +112,8 @@
         (step file pre
           (run-file file))
         (if (nil? input) (if expr (rep expr) (repl))
-          (do (let code (if (= op 'expand) (pp-to-string (expand-file input))
-                            (= op 'read) (pp-to-string (read-file input))
+          (do (let code (if (eq op 'expand) (pp-to-string (expand-file input))
+                            (eq op 'read) (pp-to-string (read-file input))
                           (compile-file input))
                 (if (or (nil? output) (= output "-"))
                     (print code)

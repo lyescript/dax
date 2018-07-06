@@ -6,7 +6,7 @@
 (define process (require "process"))
 
 (define read-file (path (o mode 'text))
-  (if (= mode 'text)
+  (if (eq mode 'text)
       (fs .read-file-sync path "utf8" .replace |/\r/g| "")
     (fs .read-file-sync path)))
 

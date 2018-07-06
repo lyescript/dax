@@ -1,13 +1,14 @@
 (ns dax.compiler)
 
 (define-global getenv (k p)
-  (when (string? k)
-    (let i (edge (_G .environment))
-      (while (>= i 0)
-        (let b (_G .environment [i] [k])
-          (if (is? b)
-              (return (if p (b [p]) b))
-            (dec i)))))))
+  (let k (if (sym? k) (str k) k)
+    (when (string? k)
+      (let i (edge (_G .environment))
+        (while (>= i 0)
+          (let b (_G .environment [i] [k])
+            (if (is? b)
+                (return (if p (b [p]) b))
+              (dec i))))))))
 
 (define macro-function (k)
   (getenv k 'macro))
@@ -122,11 +123,11 @@
 
 (define expand-local ((x name value))
   (setenv name variable: true)
-  `(%local ,name ,(macroexpand value)))
+  `(,x ,name ,(macroexpand value)))
 
 (define expand-function ((x args rest: body))
   (with-bindings (args)
-    `(%function ,args ,@(macroexpand body))))
+    `(,x ,args ,@(macroexpand body))))
 
 (define expand-table ((x rest: args))
   (with expr `(,x ,@(keys args))
@@ -146,7 +147,7 @@
   `(,x ,name ,@(tl (expand-table `(%table ,@body)))))
 
 (define-global expand-condition-case ((x var form rest: clauses))
-  `(%condition-case ,var
+  `(,x ,var
      ,(macroexpand form)
      ,@(map (fn ((which rest: body))
               (if (eq which 'finally)
@@ -165,7 +166,7 @@
 (define-global expand1 ((name rest: body))
   (apply (macro-function name) body))
 
-(define-global macroexpand (form)
+(define-global macroexpand-1 (form)
   (if (symbol-macro? form)
       (macroexpand (symbol-expansion form))
       (atom? form) form
@@ -179,6 +180,12 @@
           (eq x '%local-function) (expand-definition form)
           (macro? x) (expand-macro form)
         (map macroexpand form)))))
+
+(define-global macroexpand (form)
+  (with l (macroexpand-1 form)
+    (when (meta? form)
+      (meta! l (meta form)))))
+  ; (with-meta  (meta form)))
 
 (define quasiquote-list (form depth)
   (let xs (list '(list))
@@ -286,24 +293,35 @@
             (fn (_ x) (x (.to-upper-case))))
     name))
 
+(define-global sym? (x)
+  (instanceof x (_G .Sym)))
+
 (define-global fqn? (x)
-  (and (string? x)
-       (not (string-literal? x))
-       (let i (search x "/")
-         (and (is? i)
-              (not (= i (edge x)))))))
+  (if (sym? x)
+      (x (.fqn?))
+    (and (string? x)
+         (not (string-literal? x))
+         (let i (search x "/")
+           (and (is? i)
+                (not (= i (edge x))))))))
 
 (define-global namespace (x)
-  (when (fqn? x)
-    (clip x 0 (search x "/"))))
+  (if (sym? x)
+      (x .ns)
+    (when (fqn? x)
+      (clip x 0 (search x "/")))))
 
 (define-global name (x)
-  (if (fqn? x)
+  (if (sym? x)
+      (x .name)
+      (fqn? x)
       (clip x (+ (search x "/") 1))
     x))
 
 (define-global eq (x y)
-  (if (fqn? y) (= x y)
+  (if (and x (function? (x .eq)))
+      (x .eq y)
+      (fqn? y) (= x y)
       (string-literal? y) (= x y)
       (string? y) (= (name x) y)
     (= x y)))
@@ -459,6 +477,7 @@
       (= x inf) "inf"
       (= x -inf) "-inf"
       (number? x) (cat x "")
+      (x .compile) (cat x "")
     (error (cat "Cannot compile atom: " (str x)))))
 
 (define terminator (stmt?)

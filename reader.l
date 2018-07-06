@@ -96,9 +96,10 @@
       (if (real? n) n str)))))
 
 (define-reader ("(" s)
-  (read-char s)
   (with r nil
-    (let l (list)
+    (let (l (list) mt (obj start: (s .pos)))
+      (meta! l mt)
+      (read-char s)
       (while (nil? r)
         (skip-non-code s)
         (let c (peek-char s)
@@ -109,7 +110,8 @@
                   (let (k (clip x 0 (edge x))
                         v (read s))
                     (set (l [k]) v))
-                (add l x)))))))))
+                (add l x))))))
+      (set (mt .stop) (s .pos)))))
 
 (define-reader (")" s)
   (error (cat "Unexpected ) at " (s .pos))))

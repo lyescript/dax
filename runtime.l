@@ -33,7 +33,17 @@
     (define to-string ()
       (cat "" this))
     (define (Symbol .for "str") ()
-      (cat "" this))))
+      (cat "" this))
+    (define compile ()
+      (compile (cat "" this)))
+    (define fqn? ()
+      (and (this .name) (this .ns)))
+    (define eq (y)
+      (= (name this) (name y)))
+    (static intern (ns name meta: meta)
+      (when (nil? name)
+        (set name ns ns nil))
+      (new Sym meta ns name))))
 
 (set (_G .Unbound)
      (class Unbound))
@@ -229,7 +239,26 @@
   (Array .is-array x))
 
 (define-global atom? (x)
-  (or (nil? x) (string? x) (number? x) (boolean? x) (symbol? x)))
+  (or (nil? x) (string? x) (number? x) (boolean? x) (symbol? x) (instanceof x Sym)))
+
+(define-global metable? (x)
+  (is? x))
+
+(define-global meta (l)
+  (when (metable? l)
+    (l ._meta)))
+
+(define-global meta! (l m)
+  (if (metable? l)
+      (if (= (meta l) m) l
+        (Object .define-property
+                l "_meta"
+                (obj enumerable: false
+                     value: m)))
+    l))
+
+(define-global meta? (l)
+  (is? (meta l)))
 
 (define-global fresh (x)
   (case (type x)
@@ -241,6 +270,11 @@
     ("symbol" (Symbol))
     ("string" "")
     ("number" 0)))
+
+(define-global with-meta (x (o m (meta x)))
+  (with l (fresh x)
+    (when (is? x)
+      (meta! l m))))
 
 (define-global nan (/ 0 0))
 (define-global inf (/ 1 0))
@@ -256,7 +290,7 @@
   (s .substring from upto))
 
 (define-global cut (x from upto)
-  (with l (fresh x)
+  (with l (with-meta x)
     (let (j 0
           i (if (or (nil? from) (< from 0)) 0 from)
           n (# x)
@@ -270,7 +304,7 @@
           (set (l [k]) v))))))
 
 (define-global keys (x)
-  (with t (obj)
+  (with t (with-meta (obj) (meta x))
     (each (k v) x
       (unless (number? k)
         (set (t [k]) v)))))
@@ -315,7 +349,7 @@
   (cut l 0 (edge l)))
 
 (define-global reverse (l)
-  (with l1 (fresh l)
+  (with l1 (with-meta l)
     (let n (edge l)
       (each (k v) l
         (when (number? k)
@@ -328,7 +362,7 @@
     (f (hd x) (reduce f (tl x)))))
 
 (define-global join ls
-  (with r (fresh (hd ls))
+  (with r (with-meta (hd ls))
     (step l ls
       (when l
         (let n (# r)
@@ -350,7 +384,7 @@
   (find (fn (y) (= x y)) t))
 
 (define-global pair (l)
-  (with l1 (fresh l)
+  (with l1 (with-meta l)
     (for i (# l)
       (add l1 (list (at l i) (at l (+ i 1))))
       (inc i))))
@@ -359,7 +393,7 @@
   (l .sort (when f (fn (a b) (if (f a b) -1 1)))))
 
 (define-global map (f x)
-  (with t (fresh x)
+  (with t (with-meta x)
     (step v x
       (let y (f v)
         (if (is? y)
@@ -387,7 +421,7 @@
 (define-global stash (args)
   (if (args ._stash) args
       (keys? args)
-      (with l (list)
+      (with l (meta! (list) (meta args))
         (step x args
           (add l x))
         (let p (keys args)
@@ -396,7 +430,7 @@
     args))
 
 (define-global unstash (args)
-  (if (none? args) (fresh args)
+  (if (none? args) (with-meta args)
     (let l (last args)
       (if (and (obj? l) (l ._stash))
           (with args1 (almost args)
@@ -417,8 +451,8 @@
     (if (>= i 0) i)))
 
 (define-global split (s sep)
-  (if (or (= s "") (= sep "")) (list)
-    (with l (list)
+  (if (or (= s "") (= sep "")) (meta! (list) (meta s))
+    (with l (meta! (list) (meta s))
       (let n (# sep)
         (while true
           (let i (search s sep)

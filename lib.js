@@ -29,13 +29,13 @@ var create = (globals) => {
       var __k = undefined;
       for (__k in ____o) {
         var __v = ____o[__k];
-        var __e;
+        var __e1;
         if (numeric63(__k)) {
-          __e = parseInt(__k);
+          __e1 = parseInt(__k);
         } else {
-          __e = __k;
+          __e1 = __k;
         }
-        var __k1 = __e;
+        var __k1 = __e1;
         __l.push(__v);
       }
       return __l;
@@ -48,12 +48,49 @@ var create = (globals) => {
       this.name = name;
       return this;
     }
-    toString() {
+    [Symbol.toPrimitive](hint) {
       if (this.ns) {
         return this.ns + "/" + this.name;
       } else {
         return this.name;
       }
+    }
+    toString() {
+      return str("" + this);
+    }
+    [Symbol["for"]("str")]() {
+      return this.toString();
+    }
+    compile() {
+      return compile("" + this);
+    }
+    fqn63() {
+      return this.name && this.ns;
+    }
+    eq(y) {
+      return name(this) === name(y);
+    }
+    static intern(ns, name, ...__r975) {
+      var ____r975 = unstash(__r975);
+      var __ns7 = destash33(ns, ____r975);
+      var __name27 = destash33(name, ____r975);
+      var ____id106 = ____r975;
+      var ____r9361 = cut(____id106, 0);
+      var ____r936 = unstash(____r9361);
+      var __ns6 = destash33(__ns7, ____r936);
+      var __name26 = destash33(__name27, ____r936);
+      var ____id105 = ____r936;
+      var ____r141 = cut(____id105, 0);
+      var ____r14 = unstash(____r141);
+      var __ns = destash33(__ns6, ____r14);
+      var __name = destash33(__name26, ____r14);
+      var ____id = ____r14;
+      var __meta = ____id["meta"];
+      if (nil63(__name)) {
+        __name = __ns;
+        __ns = undefined;
+      }
+      return new Sym(__meta, __ns, __name);
     }
   };
   _G.Unbound = class Unbound {
@@ -61,13 +98,13 @@ var create = (globals) => {
   };
   _G.Var = class Var {
     constructor(ns, sym, __x) {
-      var __e1;
+      var __e2;
       if (is63(__x)) {
-        __e1 = __x;
+        __e2 = __x;
       } else {
-        __e1 = new _G.Unbound(this);
+        __e2 = new _G.Unbound(this);
       }
-      var __root = __e1;
+      var __root = __e2;
       this.ns = ns;
       this.sym = sym;
       this.root = __root;
@@ -132,8 +169,11 @@ var create = (globals) => {
     fqn() {
       return "#'" + this.ns.name + "/" + this.sym.name;
     }
-    toString() {
+    [Symbol.toPrimitive](hint) {
       return this.fqn();
+    }
+    toString() {
+      return str("" + this);
     }
     [Symbol["for"]("str")]() {
       return this.toString();
@@ -148,36 +188,39 @@ var create = (globals) => {
       return this;
     }
     static namespaces() {
-      var __id3 = Namespace._namespaces;
-      var __e2;
-      if (__id3) {
-        __e2 = __id3;
+      var __id5 = Namespace._namespaces;
+      var __e3;
+      if (__id5) {
+        __e3 = __id5;
       } else {
         Namespace._namespaces = new _G.Mapping;
-        __e2 = Namespace._namespaces;
+        __e3 = Namespace._namespaces;
       }
-      return __e2;
+      return __e3;
     }
     static all() {
       return [...Namespace.namespaces().values()];
     }
     static sym(s) {
-      if (!( s.ns || s.name)) {
+      if (typeof(s) === "string") {
         var __i1 = s.indexOf("/");
-        if (__i1 || __i1 === 0) {
+        if (__i1) {
           s = new _G.Sym(undefined, s.substr(0, __i1), s.substr(__i1 + 1));
+          return s;
         } else {
           s = new _G.Sym(undefined, undefined, s);
+          return s;
         }
+      } else {
+        return s;
       }
-      return s;
     }
     static find(name) {
       return Namespace.namespaces().get(Namespace.sym(name));
     }
     static findOrCreate(name) {
-      var __ns = Namespace.namespaces().get(name);
-      return __ns || new Namespace(name);
+      var __ns1 = Namespace.namespaces().get(name);
+      return __ns1 || new Namespace(name);
     }
     intern(sym) {
       sym = Namespace.sym(sym);
@@ -209,11 +252,11 @@ var create = (globals) => {
     }
     warnOrFailOnReplace(sym, o, v) {
       if ((o instanceof _G.Var)) {
-        var __ns1 = o.ns;
-        if (__ns1 === this || (v instanceof _G.Var) && v.ns === RT.DAX_NS) {
+        var __ns2 = o.ns;
+        if (__ns2 === this || (v instanceof _G.Var) && v.ns === RT.DAX_NS) {
           return;
         }
-        if (!( __ns1 === RT.DAX_NS)) {
+        if (!( __ns2 === RT.DAX_NS)) {
           throw new Error(str(sym) + " already refers to: " + str(o) + " in namespace: " + str(name));
         }
       }
@@ -231,20 +274,34 @@ var create = (globals) => {
       if (arguments.length === 0) {
         return _G.Compiler.NS().deref();
       } else {
-        var __ns2 = _G.Namespace.findOrCreate(x);
-        return _G.Compiler.NS().bindRoot(__ns2);
+        var __ns3 = _G.Namespace.findOrCreate(x);
+        return _G.Compiler.NS().bindRoot(__ns3);
       }
     }
   };
   _G._42ns42 = _G.Compiler.currentNS;
-  _G._42ns42("dax.lang");
-  _G._42ns42("dax.reader");
-  _G._42ns42("dax.compiler");
-  _G._42ns42("dax.system");
-  _G._42ns42("dax.main");
-  _G._42ns42("dax.core");
+  var currentNs = (x) => {
+    if (is63(x)) {
+      return _G._42ns42(x);
+    } else {
+      return _G._42ns42();
+    }
+  };
+  currentNs().intern("current-ns").bindRoot(currentNs, () => {
+    return currentNs;
+  }, (x) => {
+    currentNs = x;
+    return currentNs;
+  });
+  _G.currentNs = currentNs;
+  _G.currentNs("dax.lang");
+  _G.currentNs("dax.reader");
+  _G.currentNs("dax.compiler");
+  _G.currentNs("dax.system");
+  _G.currentNs("dax.main");
+  _G.currentNs("dax.core");
   environment = _G.environment;
-  _G._42ns42().intern("environment").bindRoot(environment, () => {
+  currentNs().intern("environment").bindRoot(environment, () => {
     return environment;
   }, (x) => {
     environment = x;
@@ -252,7 +309,7 @@ var create = (globals) => {
   });
   _G.environment = environment;
   Namespace = _G.Namespace;
-  _G._42ns42().intern("Namespace").bindRoot(Namespace, () => {
+  currentNs().intern("Namespace").bindRoot(Namespace, () => {
     return Namespace;
   }, (x) => {
     Namespace = x;
@@ -260,7 +317,7 @@ var create = (globals) => {
   });
   _G.Namespace = Namespace;
   Sym = _G.Sym;
-  _G._42ns42().intern("Sym").bindRoot(Sym, () => {
+  currentNs().intern("Sym").bindRoot(Sym, () => {
     return Sym;
   }, (x) => {
     Sym = x;
@@ -268,7 +325,7 @@ var create = (globals) => {
   });
   _G.Sym = Sym;
   Var = _G.Var;
-  _G._42ns42().intern("Var").bindRoot(Var, () => {
+  currentNs().intern("Var").bindRoot(Var, () => {
     return Var;
   }, (x) => {
     Var = x;
@@ -276,7 +333,7 @@ var create = (globals) => {
   });
   _G.Var = Var;
   Unbound = _G.Unbound;
-  _G._42ns42().intern("Unbound").bindRoot(Unbound, () => {
+  currentNs().intern("Unbound").bindRoot(Unbound, () => {
     return Unbound;
   }, (x) => {
     Unbound = x;
@@ -284,7 +341,7 @@ var create = (globals) => {
   });
   _G.Unbound = Unbound;
   Mapping = _G.Mapping;
-  _G._42ns42().intern("Mapping").bindRoot(Mapping, () => {
+  currentNs().intern("Mapping").bindRoot(Mapping, () => {
     return Mapping;
   }, (x) => {
     Mapping = x;
@@ -294,7 +351,7 @@ var create = (globals) => {
   var nil63 = (x) => {
     return x === undefined || x === null;
   };
-  _G._42ns42().intern("nil?").bindRoot(nil63, () => {
+  currentNs().intern("nil?").bindRoot(nil63, () => {
     return nil63;
   }, (x) => {
     nil63 = x;
@@ -304,7 +361,7 @@ var create = (globals) => {
   var is63 = (x) => {
     return ! nil63(x);
   };
-  _G._42ns42().intern("is?").bindRoot(is63, () => {
+  currentNs().intern("is?").bindRoot(is63, () => {
     return is63;
   }, (x) => {
     is63 = x;
@@ -314,7 +371,7 @@ var create = (globals) => {
   var no = (x) => {
     return nil63(x) || x === false;
   };
-  _G._42ns42().intern("no").bindRoot(no, () => {
+  currentNs().intern("no").bindRoot(no, () => {
     return no;
   }, (x) => {
     no = x;
@@ -324,7 +381,7 @@ var create = (globals) => {
   var yes = (x) => {
     return ! no(x);
   };
-  _G._42ns42().intern("yes").bindRoot(yes, () => {
+  currentNs().intern("yes").bindRoot(yes, () => {
     return yes;
   }, (x) => {
     yes = x;
@@ -338,7 +395,7 @@ var create = (globals) => {
       return y;
     }
   };
-  _G._42ns42().intern("either").bindRoot(either, () => {
+  currentNs().intern("either").bindRoot(either, () => {
     return either;
   }, (x) => {
     either = x;
@@ -348,7 +405,7 @@ var create = (globals) => {
   var has63 = (l, k) => {
     return l.hasOwnProperty(k);
   };
-  _G._42ns42().intern("has?").bindRoot(has63, () => {
+  currentNs().intern("has?").bindRoot(has63, () => {
     return has63;
   }, (x) => {
     has63 = x;
@@ -365,13 +422,13 @@ var create = (globals) => {
       var __k2 = undefined;
       for (__k2 in ____o2) {
         var __v2 = ____o2[__k2];
-        var __e3;
+        var __e4;
         if (numeric63(__k2)) {
-          __e3 = parseInt(__k2);
+          __e4 = parseInt(__k2);
         } else {
-          __e3 = __k2;
+          __e4 = __k2;
         }
-        var __k3 = __e3;
+        var __k3 = __e4;
         if (number63(__k3) && __k3 > __n2) {
           __n2 = __k3;
         }
@@ -379,7 +436,7 @@ var create = (globals) => {
       return __n2 + 1;
     }
   };
-  _G._42ns42().intern("#").bindRoot(_35, () => {
+  currentNs().intern("#").bindRoot(_35, () => {
     return _35;
   }, (x) => {
     _35 = x;
@@ -389,7 +446,7 @@ var create = (globals) => {
   var none63 = (x) => {
     return _35(x) === 0;
   };
-  _G._42ns42().intern("none?").bindRoot(none63, () => {
+  currentNs().intern("none?").bindRoot(none63, () => {
     return none63;
   }, (x) => {
     none63 = x;
@@ -399,7 +456,7 @@ var create = (globals) => {
   var some63 = (x) => {
     return _35(x) > 0;
   };
-  _G._42ns42().intern("some?").bindRoot(some63, () => {
+  currentNs().intern("some?").bindRoot(some63, () => {
     return some63;
   }, (x) => {
     some63 = x;
@@ -409,7 +466,7 @@ var create = (globals) => {
   var one63 = (x) => {
     return _35(x) === 1;
   };
-  _G._42ns42().intern("one?").bindRoot(one63, () => {
+  currentNs().intern("one?").bindRoot(one63, () => {
     return one63;
   }, (x) => {
     one63 = x;
@@ -419,7 +476,7 @@ var create = (globals) => {
   var two63 = (x) => {
     return _35(x) === 2;
   };
-  _G._42ns42().intern("two?").bindRoot(two63, () => {
+  currentNs().intern("two?").bindRoot(two63, () => {
     return two63;
   }, (x) => {
     two63 = x;
@@ -429,7 +486,7 @@ var create = (globals) => {
   var hd = (l) => {
     return l[0];
   };
-  _G._42ns42().intern("hd").bindRoot(hd, () => {
+  currentNs().intern("hd").bindRoot(hd, () => {
     return hd;
   }, (x) => {
     hd = x;
@@ -439,7 +496,7 @@ var create = (globals) => {
   var type = (x) => {
     return typeof(x);
   };
-  _G._42ns42().intern("type").bindRoot(type, () => {
+  currentNs().intern("type").bindRoot(type, () => {
     return type;
   }, (x) => {
     type = x;
@@ -449,7 +506,7 @@ var create = (globals) => {
   var type63 = (x, y) => {
     return type(x) === y;
   };
-  _G._42ns42().intern("type?").bindRoot(type63, () => {
+  currentNs().intern("type?").bindRoot(type63, () => {
     return type63;
   }, (x) => {
     type63 = x;
@@ -459,7 +516,7 @@ var create = (globals) => {
   var string63 = (x) => {
     return type63(x, "string");
   };
-  _G._42ns42().intern("string?").bindRoot(string63, () => {
+  currentNs().intern("string?").bindRoot(string63, () => {
     return string63;
   }, (x) => {
     string63 = x;
@@ -469,7 +526,7 @@ var create = (globals) => {
   var number63 = (x) => {
     return type63(x, "number");
   };
-  _G._42ns42().intern("number?").bindRoot(number63, () => {
+  currentNs().intern("number?").bindRoot(number63, () => {
     return number63;
   }, (x) => {
     number63 = x;
@@ -479,7 +536,7 @@ var create = (globals) => {
   var boolean63 = (x) => {
     return type63(x, "boolean");
   };
-  _G._42ns42().intern("boolean?").bindRoot(boolean63, () => {
+  currentNs().intern("boolean?").bindRoot(boolean63, () => {
     return boolean63;
   }, (x) => {
     boolean63 = x;
@@ -489,7 +546,7 @@ var create = (globals) => {
   var function63 = (x) => {
     return type63(x, "function");
   };
-  _G._42ns42().intern("function?").bindRoot(function63, () => {
+  currentNs().intern("function?").bindRoot(function63, () => {
     return function63;
   }, (x) => {
     function63 = x;
@@ -499,7 +556,7 @@ var create = (globals) => {
   var symbol63 = (x) => {
     return type63(x, "symbol");
   };
-  _G._42ns42().intern("symbol?").bindRoot(symbol63, () => {
+  currentNs().intern("symbol?").bindRoot(symbol63, () => {
     return symbol63;
   }, (x) => {
     symbol63 = x;
@@ -509,7 +566,7 @@ var create = (globals) => {
   var obj63 = (x) => {
     return is63(x) && type63(x, "object");
   };
-  _G._42ns42().intern("obj?").bindRoot(obj63, () => {
+  currentNs().intern("obj?").bindRoot(obj63, () => {
     return obj63;
   }, (x) => {
     obj63 = x;
@@ -519,23 +576,83 @@ var create = (globals) => {
   var array63 = (x) => {
     return Array.isArray(x);
   };
-  _G._42ns42().intern("array?").bindRoot(array63, () => {
+  currentNs().intern("array?").bindRoot(array63, () => {
     return array63;
   }, (x) => {
     array63 = x;
     return array63;
   });
   _G.array63 = array63;
-  var atom63 = (x) => {
-    return nil63(x) || string63(x) || number63(x) || boolean63(x) || symbol63(x);
+  var sym63 = (x) => {
+    return (x instanceof _G.Sym);
   };
-  _G._42ns42().intern("atom?").bindRoot(atom63, () => {
+  currentNs().intern("sym?").bindRoot(sym63, () => {
+    return sym63;
+  }, (x) => {
+    sym63 = x;
+    return sym63;
+  });
+  _G.sym63 = sym63;
+  var atom63 = (x) => {
+    return nil63(x) || string63(x) || number63(x) || boolean63(x) || symbol63(x) || sym63(x);
+  };
+  currentNs().intern("atom?").bindRoot(atom63, () => {
     return atom63;
   }, (x) => {
     atom63 = x;
     return atom63;
   });
   _G.atom63 = atom63;
+  var metable63 = (x) => {
+    return is63(x);
+  };
+  currentNs().intern("metable?").bindRoot(metable63, () => {
+    return metable63;
+  }, (x) => {
+    metable63 = x;
+    return metable63;
+  });
+  _G.metable63 = metable63;
+  var meta = (l) => {
+    if (metable63(l)) {
+      return l._meta;
+    }
+  };
+  currentNs().intern("meta").bindRoot(meta, () => {
+    return meta;
+  }, (x) => {
+    meta = x;
+    return meta;
+  });
+  _G.meta = meta;
+  var meta33 = (l, m) => {
+    if (metable63(l)) {
+      if (meta(l) === m) {
+        return l;
+      } else {
+        return Object.defineProperty(l, "_meta", {["enumerable"]: false, ["value"]: m});
+      }
+    } else {
+      return l;
+    }
+  };
+  currentNs().intern("meta!").bindRoot(meta33, () => {
+    return meta33;
+  }, (x) => {
+    meta33 = x;
+    return meta33;
+  });
+  _G.meta33 = meta33;
+  var meta63 = (l) => {
+    return is63(meta(l));
+  };
+  currentNs().intern("meta?").bindRoot(meta63, () => {
+    return meta63;
+  }, (x) => {
+    meta63 = x;
+    return meta63;
+  });
+  _G.meta63 = meta63;
   var fresh = (x) => {
     var ____x1 = type(x);
     if ("object" === ____x1) {
@@ -566,15 +683,36 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("fresh").bindRoot(fresh, () => {
+  currentNs().intern("fresh").bindRoot(fresh, () => {
     return fresh;
   }, (x) => {
     fresh = x;
     return fresh;
   });
   _G.fresh = fresh;
+  var withMeta = (x, __x2) => {
+    var __e5;
+    if (is63(__x2)) {
+      __e5 = __x2;
+    } else {
+      __e5 = meta(x);
+    }
+    var __m1 = __e5;
+    var __l1 = fresh(x);
+    if (is63(x)) {
+      meta33(__l1, __m1);
+    }
+    return __l1;
+  };
+  currentNs().intern("with-meta").bindRoot(withMeta, () => {
+    return withMeta;
+  }, (x) => {
+    withMeta = x;
+    return withMeta;
+  });
+  _G.withMeta = withMeta;
   nan = 0 / 0;
-  _G._42ns42().intern("nan").bindRoot(nan, () => {
+  currentNs().intern("nan").bindRoot(nan, () => {
     return nan;
   }, (x) => {
     nan = x;
@@ -582,7 +720,7 @@ var create = (globals) => {
   });
   _G.nan = nan;
   inf = 1 / 0;
-  _G._42ns42().intern("inf").bindRoot(inf, () => {
+  currentNs().intern("inf").bindRoot(inf, () => {
     return inf;
   }, (x) => {
     inf = x;
@@ -590,7 +728,7 @@ var create = (globals) => {
   });
   _G.inf = inf;
   _inf = - inf;
-  _G._42ns42().intern("-inf").bindRoot(_inf, () => {
+  currentNs().intern("-inf").bindRoot(_inf, () => {
     return _inf;
   }, (x) => {
     _inf = x;
@@ -600,7 +738,7 @@ var create = (globals) => {
   var nan63 = (n) => {
     return !( n === n);
   };
-  _G._42ns42().intern("nan?").bindRoot(nan63, () => {
+  currentNs().intern("nan?").bindRoot(nan63, () => {
     return nan63;
   }, (x) => {
     nan63 = x;
@@ -610,7 +748,7 @@ var create = (globals) => {
   var inf63 = (n) => {
     return n === inf || n === _inf;
   };
-  _G._42ns42().intern("inf?").bindRoot(inf63, () => {
+  currentNs().intern("inf?").bindRoot(inf63, () => {
     return inf63;
   }, (x) => {
     inf63 = x;
@@ -620,7 +758,7 @@ var create = (globals) => {
   var clip = (s, from, upto) => {
     return s.substring(from, upto);
   };
-  _G._42ns42().intern("clip").bindRoot(clip, () => {
+  currentNs().intern("clip").bindRoot(clip, () => {
     return clip;
   }, (x) => {
     clip = x;
@@ -628,25 +766,25 @@ var create = (globals) => {
   });
   _G.clip = clip;
   var cut = (x, from, upto) => {
-    var __l1 = fresh(x);
+    var __l2 = withMeta(x);
     var __j = 0;
-    var __e4;
+    var __e6;
     if (nil63(from) || from < 0) {
-      __e4 = 0;
+      __e6 = 0;
     } else {
-      __e4 = from;
+      __e6 = from;
     }
-    var __i3 = __e4;
+    var __i3 = __e6;
     var __n4 = _35(x);
-    var __e5;
+    var __e7;
     if (nil63(upto) || upto > __n4) {
-      __e5 = __n4;
+      __e7 = __n4;
     } else {
-      __e5 = upto;
+      __e7 = upto;
     }
-    var __upto = __e5;
+    var __upto = __e7;
     while (__i3 < __upto) {
-      __l1[__j] = x[__i3];
+      __l2[__j] = x[__i3];
       __i3 = __i3 + 1;
       __j = __j + 1;
     }
@@ -654,20 +792,20 @@ var create = (globals) => {
     var __k4 = undefined;
     for (__k4 in ____o3) {
       var __v3 = ____o3[__k4];
-      var __e6;
+      var __e8;
       if (numeric63(__k4)) {
-        __e6 = parseInt(__k4);
+        __e8 = parseInt(__k4);
       } else {
-        __e6 = __k4;
+        __e8 = __k4;
       }
-      var __k5 = __e6;
+      var __k5 = __e8;
       if (! number63(__k5)) {
-        __l1[__k5] = __v3;
+        __l2[__k5] = __v3;
       }
     }
-    return __l1;
+    return __l2;
   };
-  _G._42ns42().intern("cut").bindRoot(cut, () => {
+  currentNs().intern("cut").bindRoot(cut, () => {
     return cut;
   }, (x) => {
     cut = x;
@@ -675,25 +813,25 @@ var create = (globals) => {
   });
   _G.cut = cut;
   var keys = (x) => {
-    var __t = {};
+    var __t = withMeta({}, meta(x));
     var ____o4 = x;
     var __k6 = undefined;
     for (__k6 in ____o4) {
       var __v4 = ____o4[__k6];
-      var __e7;
+      var __e9;
       if (numeric63(__k6)) {
-        __e7 = parseInt(__k6);
+        __e9 = parseInt(__k6);
       } else {
-        __e7 = __k6;
+        __e9 = __k6;
       }
-      var __k7 = __e7;
+      var __k7 = __e9;
       if (! number63(__k7)) {
         __t[__k7] = __v4;
       }
     }
     return __t;
   };
-  _G._42ns42().intern("keys").bindRoot(keys, () => {
+  currentNs().intern("keys").bindRoot(keys, () => {
     return keys;
   }, (x) => {
     keys = x;
@@ -703,7 +841,7 @@ var create = (globals) => {
   var edge = (x) => {
     return _35(x) - 1;
   };
-  _G._42ns42().intern("edge").bindRoot(edge, () => {
+  currentNs().intern("edge").bindRoot(edge, () => {
     return edge;
   }, (x) => {
     edge = x;
@@ -713,7 +851,7 @@ var create = (globals) => {
   var inner = (x) => {
     return clip(x, 1, edge(x));
   };
-  _G._42ns42().intern("inner").bindRoot(inner, () => {
+  currentNs().intern("inner").bindRoot(inner, () => {
     return inner;
   }, (x) => {
     inner = x;
@@ -723,7 +861,7 @@ var create = (globals) => {
   var tl = (l) => {
     return cut(l, 1);
   };
-  _G._42ns42().intern("tl").bindRoot(tl, () => {
+  currentNs().intern("tl").bindRoot(tl, () => {
     return tl;
   }, (x) => {
     tl = x;
@@ -733,7 +871,7 @@ var create = (globals) => {
   var char = (s, n) => {
     return s.charAt(n);
   };
-  _G._42ns42().intern("char").bindRoot(char, () => {
+  currentNs().intern("char").bindRoot(char, () => {
     return char;
   }, (x) => {
     char = x;
@@ -743,7 +881,7 @@ var create = (globals) => {
   var code = (s, n) => {
     return s.charCodeAt(n);
   };
-  _G._42ns42().intern("code").bindRoot(code, () => {
+  currentNs().intern("code").bindRoot(code, () => {
     return code;
   }, (x) => {
     code = x;
@@ -753,7 +891,7 @@ var create = (globals) => {
   var stringLiteral63 = (x) => {
     return string63(x) && char(x, 0) === "\"";
   };
-  _G._42ns42().intern("string-literal?").bindRoot(stringLiteral63, () => {
+  currentNs().intern("string-literal?").bindRoot(stringLiteral63, () => {
     return stringLiteral63;
   }, (x) => {
     stringLiteral63 = x;
@@ -763,7 +901,7 @@ var create = (globals) => {
   var idLiteral63 = (x) => {
     return string63(x) && char(x, 0) === "|";
   };
-  _G._42ns42().intern("id-literal?").bindRoot(idLiteral63, () => {
+  currentNs().intern("id-literal?").bindRoot(idLiteral63, () => {
     return idLiteral63;
   }, (x) => {
     idLiteral63 = x;
@@ -778,7 +916,7 @@ var create = (globals) => {
     }
     return undefined;
   };
-  _G._42ns42().intern("add").bindRoot(add, () => {
+  currentNs().intern("add").bindRoot(add, () => {
     return add;
   }, (x) => {
     add = x;
@@ -790,12 +928,12 @@ var create = (globals) => {
       return l.pop();
     } else {
       var __i6 = edge(l);
-      var __x2 = l[__i6];
+      var __x3 = l[__i6];
       delete l[__i6];
-      return __x2;
+      return __x3;
     }
   };
-  _G._42ns42().intern("drop").bindRoot(drop, () => {
+  currentNs().intern("drop").bindRoot(drop, () => {
     return drop;
   }, (x) => {
     drop = x;
@@ -805,7 +943,7 @@ var create = (globals) => {
   var last = (l) => {
     return l[edge(l)];
   };
-  _G._42ns42().intern("last").bindRoot(last, () => {
+  currentNs().intern("last").bindRoot(last, () => {
     return last;
   }, (x) => {
     last = x;
@@ -815,7 +953,7 @@ var create = (globals) => {
   var almost = (l) => {
     return cut(l, 0, edge(l));
   };
-  _G._42ns42().intern("almost").bindRoot(almost, () => {
+  currentNs().intern("almost").bindRoot(almost, () => {
     return almost;
   }, (x) => {
     almost = x;
@@ -823,19 +961,19 @@ var create = (globals) => {
   });
   _G.almost = almost;
   var reverse = (l) => {
-    var __l11 = fresh(l);
+    var __l11 = withMeta(l);
     var __n7 = edge(l);
     var ____o5 = l;
     var __k8 = undefined;
     for (__k8 in ____o5) {
       var __v5 = ____o5[__k8];
-      var __e8;
+      var __e10;
       if (numeric63(__k8)) {
-        __e8 = parseInt(__k8);
+        __e10 = parseInt(__k8);
       } else {
-        __e8 = __k8;
+        __e10 = __k8;
       }
-      var __k9 = __e8;
+      var __k9 = __e10;
       if (number63(__k9)) {
         __k9 = __n7 - __k9;
       }
@@ -843,7 +981,7 @@ var create = (globals) => {
     }
     return __l11;
   };
-  _G._42ns42().intern("reverse").bindRoot(reverse, () => {
+  currentNs().intern("reverse").bindRoot(reverse, () => {
     return reverse;
   }, (x) => {
     reverse = x;
@@ -861,7 +999,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("reduce").bindRoot(reduce, () => {
+  currentNs().intern("reduce").bindRoot(reduce, () => {
     return reduce;
   }, (x) => {
     reduce = x;
@@ -870,35 +1008,35 @@ var create = (globals) => {
   _G.reduce = reduce;
   var join = (...ls) => {
     var __ls = unstash(ls);
-    var __r173 = fresh(hd(__ls));
-    var ____x3 = __ls;
+    var __r201 = withMeta(hd(__ls));
+    var ____x4 = __ls;
     var ____i8 = 0;
-    while (____i8 < _35(____x3)) {
-      var __l2 = ____x3[____i8];
-      if (__l2) {
-        var __n9 = _35(__r173);
-        var ____o6 = __l2;
+    while (____i8 < _35(____x4)) {
+      var __l3 = ____x4[____i8];
+      if (__l3) {
+        var __n9 = _35(__r201);
+        var ____o6 = __l3;
         var __k10 = undefined;
         for (__k10 in ____o6) {
           var __v6 = ____o6[__k10];
-          var __e9;
+          var __e11;
           if (numeric63(__k10)) {
-            __e9 = parseInt(__k10);
+            __e11 = parseInt(__k10);
           } else {
-            __e9 = __k10;
+            __e11 = __k10;
           }
-          var __k11 = __e9;
+          var __k11 = __e11;
           if (number63(__k11)) {
             __k11 = __k11 + __n9;
           }
-          __r173[__k11] = __v6;
+          __r201[__k11] = __v6;
         }
       }
       ____i8 = ____i8 + 1;
     }
-    return __r173;
+    return __r201;
   };
-  _G._42ns42().intern("join").bindRoot(join, () => {
+  currentNs().intern("join").bindRoot(join, () => {
     return join;
   }, (x) => {
     join = x;
@@ -909,21 +1047,21 @@ var create = (globals) => {
     var ____o7 = t;
     var ____i10 = undefined;
     for (____i10 in ____o7) {
-      var __x4 = ____o7[____i10];
-      var __e10;
+      var __x5 = ____o7[____i10];
+      var __e12;
       if (numeric63(____i10)) {
-        __e10 = parseInt(____i10);
+        __e12 = parseInt(____i10);
       } else {
-        __e10 = ____i10;
+        __e12 = ____i10;
       }
-      var ____i101 = __e10;
-      var __y = f(__x4);
+      var ____i101 = __e12;
+      var __y = f(__x5);
       if (__y) {
         return __y;
       }
     }
   };
-  _G._42ns42().intern("find").bindRoot(find, () => {
+  currentNs().intern("find").bindRoot(find, () => {
     return find;
   }, (x) => {
     find = x;
@@ -931,18 +1069,18 @@ var create = (globals) => {
   });
   _G.find = find;
   var first = (f, l) => {
-    var ____x5 = l;
+    var ____x6 = l;
     var ____i11 = 0;
-    while (____i11 < _35(____x5)) {
-      var __x6 = ____x5[____i11];
-      var __y1 = f(__x6);
+    while (____i11 < _35(____x6)) {
+      var __x7 = ____x6[____i11];
+      var __y1 = f(__x7);
       if (__y1) {
         return __y1;
       }
       ____i11 = ____i11 + 1;
     }
   };
-  _G._42ns42().intern("first").bindRoot(first, () => {
+  currentNs().intern("first").bindRoot(first, () => {
     return first;
   }, (x) => {
     first = x;
@@ -954,7 +1092,7 @@ var create = (globals) => {
       return x === y;
     }, t);
   };
-  _G._42ns42().intern("in?").bindRoot(in63, () => {
+  currentNs().intern("in?").bindRoot(in63, () => {
     return in63;
   }, (x) => {
     in63 = x;
@@ -962,7 +1100,7 @@ var create = (globals) => {
   });
   _G.in63 = in63;
   var pair = (l) => {
-    var __l12 = fresh(l);
+    var __l12 = withMeta(l);
     var __i12 = 0;
     while (__i12 < _35(l)) {
       add(__l12, [l[__i12], l[__i12 + 1]]);
@@ -971,7 +1109,7 @@ var create = (globals) => {
     }
     return __l12;
   };
-  _G._42ns42().intern("pair").bindRoot(pair, () => {
+  currentNs().intern("pair").bindRoot(pair, () => {
     return pair;
   }, (x) => {
     pair = x;
@@ -979,9 +1117,9 @@ var create = (globals) => {
   });
   _G.pair = pair;
   var sort = (l, f) => {
-    var __e11;
+    var __e13;
     if (f) {
-      __e11 = (a, b) => {
+      __e13 = (a, b) => {
         if (f(a, b)) {
           return -1;
         } else {
@@ -989,9 +1127,9 @@ var create = (globals) => {
         }
       };
     }
-    return l.sort(__e11);
+    return l.sort(__e13);
   };
-  _G._42ns42().intern("sort").bindRoot(sort, () => {
+  currentNs().intern("sort").bindRoot(sort, () => {
     return sort;
   }, (x) => {
     sort = x;
@@ -999,11 +1137,11 @@ var create = (globals) => {
   });
   _G.sort = sort;
   var map = (f, x) => {
-    var __t1 = fresh(x);
-    var ____x7 = x;
+    var __t1 = withMeta(x);
+    var ____x8 = x;
     var ____i13 = 0;
-    while (____i13 < _35(____x7)) {
-      var __v7 = ____x7[____i13];
+    while (____i13 < _35(____x8)) {
+      var __v7 = ____x8[____i13];
       var __y2 = f(__v7);
       if (is63(__y2)) {
         add(__t1, __y2);
@@ -1014,13 +1152,13 @@ var create = (globals) => {
     var __k12 = undefined;
     for (__k12 in ____o8) {
       var __v8 = ____o8[__k12];
-      var __e12;
+      var __e14;
       if (numeric63(__k12)) {
-        __e12 = parseInt(__k12);
+        __e14 = parseInt(__k12);
       } else {
-        __e12 = __k12;
+        __e14 = __k12;
       }
-      var __k13 = __e12;
+      var __k13 = __e14;
       if (! number63(__k13)) {
         var __y3 = f(__v8);
         if (is63(__y3)) {
@@ -1030,7 +1168,7 @@ var create = (globals) => {
     }
     return __t1;
   };
-  _G._42ns42().intern("map").bindRoot(map, () => {
+  currentNs().intern("map").bindRoot(map, () => {
     return map;
   }, (x) => {
     map = x;
@@ -1044,7 +1182,7 @@ var create = (globals) => {
       }
     }, x);
   };
-  _G._42ns42().intern("keep").bindRoot(keep, () => {
+  currentNs().intern("keep").bindRoot(keep, () => {
     return keep;
   }, (x) => {
     keep = x;
@@ -1056,20 +1194,20 @@ var create = (globals) => {
     var __k14 = undefined;
     for (__k14 in ____o9) {
       var __v9 = ____o9[__k14];
-      var __e13;
+      var __e15;
       if (numeric63(__k14)) {
-        __e13 = parseInt(__k14);
+        __e15 = parseInt(__k14);
       } else {
-        __e13 = __k14;
+        __e15 = __k14;
       }
-      var __k15 = __e13;
+      var __k15 = __e15;
       if (! number63(__k15)) {
         return true;
       }
     }
     return false;
   };
-  _G._42ns42().intern("keys?").bindRoot(keys63, () => {
+  currentNs().intern("keys?").bindRoot(keys63, () => {
     return keys63;
   }, (x) => {
     keys63 = x;
@@ -1080,19 +1218,19 @@ var create = (globals) => {
     var ____o10 = t;
     var ____i16 = undefined;
     for (____i16 in ____o10) {
-      var __x8 = ____o10[____i16];
-      var __e14;
+      var __x9 = ____o10[____i16];
+      var __e16;
       if (numeric63(____i16)) {
-        __e14 = parseInt(____i16);
+        __e16 = parseInt(____i16);
       } else {
-        __e14 = ____i16;
+        __e16 = ____i16;
       }
-      var ____i161 = __e14;
+      var ____i161 = __e16;
       return false;
     }
     return true;
   };
-  _G._42ns42().intern("empty?").bindRoot(empty63, () => {
+  currentNs().intern("empty?").bindRoot(empty63, () => {
     return empty63;
   }, (x) => {
     empty63 = x;
@@ -1104,24 +1242,24 @@ var create = (globals) => {
       return args;
     } else {
       if (keys63(args)) {
-        var __l3 = [];
-        var ____x9 = args;
+        var __l4 = meta33([], meta(args));
+        var ____x10 = args;
         var ____i17 = 0;
-        while (____i17 < _35(____x9)) {
-          var __x10 = ____x9[____i17];
-          add(__l3, __x10);
+        while (____i17 < _35(____x10)) {
+          var __x11 = ____x10[____i17];
+          add(__l4, __x11);
           ____i17 = ____i17 + 1;
         }
         var __p = keys(args);
         __p._stash = __p._stash || true;
-        add(__l3, __p);
-        return __l3;
+        add(__l4, __p);
+        return __l4;
       } else {
         return args;
       }
     }
   };
-  _G._42ns42().intern("stash").bindRoot(stash, () => {
+  currentNs().intern("stash").bindRoot(stash, () => {
     return stash;
   }, (x) => {
     stash = x;
@@ -1130,22 +1268,22 @@ var create = (globals) => {
   _G.stash = stash;
   var unstash = (args) => {
     if (none63(args)) {
-      return fresh(args);
+      return withMeta(args);
     } else {
-      var __l4 = last(args);
-      if (obj63(__l4) && __l4._stash) {
+      var __l5 = last(args);
+      if (obj63(__l5) && __l5._stash) {
         var __args1 = almost(args);
-        var ____o11 = __l4;
+        var ____o11 = __l5;
         var __k16 = undefined;
         for (__k16 in ____o11) {
           var __v10 = ____o11[__k16];
-          var __e15;
+          var __e17;
           if (numeric63(__k16)) {
-            __e15 = parseInt(__k16);
+            __e17 = parseInt(__k16);
           } else {
-            __e15 = __k16;
+            __e17 = __k16;
           }
-          var __k17 = __e15;
+          var __k17 = __e17;
           if (!( __k17 === "_stash")) {
             __args1[__k17] = __v10;
           }
@@ -1156,7 +1294,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("unstash").bindRoot(unstash, () => {
+  currentNs().intern("unstash").bindRoot(unstash, () => {
     return unstash;
   }, (x) => {
     unstash = x;
@@ -1169,13 +1307,13 @@ var create = (globals) => {
       var __k18 = undefined;
       for (__k18 in ____o12) {
         var __v11 = ____o12[__k18];
-        var __e16;
+        var __e18;
         if (numeric63(__k18)) {
-          __e16 = parseInt(__k18);
+          __e18 = parseInt(__k18);
         } else {
-          __e16 = __k18;
+          __e18 = __k18;
         }
-        var __k19 = __e16;
+        var __k19 = __e18;
         if (!( __k19 === "_stash")) {
           args1[__k19] = __v11;
         }
@@ -1184,7 +1322,7 @@ var create = (globals) => {
       return l;
     }
   };
-  _G._42ns42().intern("destash!").bindRoot(destash33, () => {
+  currentNs().intern("destash!").bindRoot(destash33, () => {
     return destash33;
   }, (x) => {
     destash33 = x;
@@ -1197,7 +1335,7 @@ var create = (globals) => {
       return __i20;
     }
   };
-  _G._42ns42().intern("search").bindRoot(search, () => {
+  currentNs().intern("search").bindRoot(search, () => {
     return search;
   }, (x) => {
     search = x;
@@ -1206,24 +1344,24 @@ var create = (globals) => {
   _G.search = search;
   var split = (s, sep) => {
     if (s === "" || sep === "") {
-      return [];
+      return meta33([], meta(s));
     } else {
-      var __l5 = [];
+      var __l6 = meta33([], meta(s));
       var __n17 = _35(sep);
       while (true) {
         var __i21 = search(s, sep);
         if (nil63(__i21)) {
           break;
         } else {
-          add(__l5, clip(s, 0, __i21));
+          add(__l6, clip(s, 0, __i21));
           s = clip(s, __i21 + __n17);
         }
       }
-      add(__l5, s);
-      return __l5;
+      add(__l6, s);
+      return __l6;
     }
   };
-  _G._42ns42().intern("split").bindRoot(split, () => {
+  currentNs().intern("split").bindRoot(split, () => {
     return split;
   }, (x) => {
     split = x;
@@ -1236,7 +1374,7 @@ var create = (globals) => {
       return a + b;
     }, __xs), "");
   };
-  _G._42ns42().intern("cat").bindRoot(cat, () => {
+  currentNs().intern("cat").bindRoot(cat, () => {
     return cat;
   }, (x) => {
     cat = x;
@@ -1249,7 +1387,7 @@ var create = (globals) => {
       return a + b;
     }, __xs1), 0);
   };
-  _G._42ns42().intern("+").bindRoot(_43, () => {
+  currentNs().intern("+").bindRoot(_43, () => {
     return _43;
   }, (x) => {
     _43 = x;
@@ -1262,7 +1400,7 @@ var create = (globals) => {
       return a - b;
     }, reverse(__xs2)), 0);
   };
-  _G._42ns42().intern("-").bindRoot(_45, () => {
+  currentNs().intern("-").bindRoot(_45, () => {
     return _45;
   }, (x) => {
     _45 = x;
@@ -1275,7 +1413,7 @@ var create = (globals) => {
       return a * b;
     }, __xs3), 1);
   };
-  _G._42ns42().intern("*").bindRoot(_42, () => {
+  currentNs().intern("*").bindRoot(_42, () => {
     return _42;
   }, (x) => {
     _42 = x;
@@ -1288,7 +1426,7 @@ var create = (globals) => {
       return a / b;
     }, reverse(__xs4)), 1);
   };
-  _G._42ns42().intern("/").bindRoot(_47, () => {
+  currentNs().intern("/").bindRoot(_47, () => {
     return _47;
   }, (x) => {
     _47 = x;
@@ -1301,7 +1439,7 @@ var create = (globals) => {
       return a % b;
     }, reverse(__xs5)), 0);
   };
-  _G._42ns42().intern("%").bindRoot(_37, () => {
+  currentNs().intern("%").bindRoot(_37, () => {
     return _37;
   }, (x) => {
     _37 = x;
@@ -1320,7 +1458,7 @@ var create = (globals) => {
     }
     return true;
   };
-  _G._42ns42().intern("pairwise").bindRoot(pairwise, () => {
+  currentNs().intern("pairwise").bindRoot(pairwise, () => {
     return pairwise;
   }, (x) => {
     pairwise = x;
@@ -1333,7 +1471,7 @@ var create = (globals) => {
       return a < b;
     }, __xs6);
   };
-  _G._42ns42().intern("<").bindRoot(_60, () => {
+  currentNs().intern("<").bindRoot(_60, () => {
     return _60;
   }, (x) => {
     _60 = x;
@@ -1346,7 +1484,7 @@ var create = (globals) => {
       return a > b;
     }, __xs7);
   };
-  _G._42ns42().intern(">").bindRoot(_62, () => {
+  currentNs().intern(">").bindRoot(_62, () => {
     return _62;
   }, (x) => {
     _62 = x;
@@ -1359,7 +1497,7 @@ var create = (globals) => {
       return a === b;
     }, __xs8);
   };
-  _G._42ns42().intern("=").bindRoot(_61, () => {
+  currentNs().intern("=").bindRoot(_61, () => {
     return _61;
   }, (x) => {
     _61 = x;
@@ -1372,7 +1510,7 @@ var create = (globals) => {
       return a <= b;
     }, __xs9);
   };
-  _G._42ns42().intern("<=").bindRoot(_6061, () => {
+  currentNs().intern("<=").bindRoot(_6061, () => {
     return _6061;
   }, (x) => {
     _6061 = x;
@@ -1385,7 +1523,7 @@ var create = (globals) => {
       return a >= b;
     }, __xs10);
   };
-  _G._42ns42().intern(">=").bindRoot(_6261, () => {
+  currentNs().intern(">=").bindRoot(_6261, () => {
     return _6261;
   }, (x) => {
     _6261 = x;
@@ -1398,7 +1536,7 @@ var create = (globals) => {
       return __n18;
     }
   };
-  _G._42ns42().intern("number").bindRoot(number, () => {
+  currentNs().intern("number").bindRoot(number, () => {
     return number;
   }, (x) => {
     number = x;
@@ -1408,7 +1546,7 @@ var create = (globals) => {
   var numberCode63 = (n) => {
     return n >= 48 && n <= 57;
   };
-  _G._42ns42().intern("number-code?").bindRoot(numberCode63, () => {
+  currentNs().intern("number-code?").bindRoot(numberCode63, () => {
     return numberCode63;
   }, (x) => {
     numberCode63 = x;
@@ -1426,7 +1564,7 @@ var create = (globals) => {
     }
     return some63(s);
   };
-  _G._42ns42().intern("numeric?").bindRoot(numeric63, () => {
+  currentNs().intern("numeric?").bindRoot(numeric63, () => {
     return numeric63;
   }, (x) => {
     numeric63 = x;
@@ -1436,7 +1574,7 @@ var create = (globals) => {
   var tostring = (x) => {
     return x.toString();
   };
-  _G._42ns42().intern("tostring").bindRoot(tostring, () => {
+  currentNs().intern("tostring").bindRoot(tostring, () => {
     return tostring;
   }, (x) => {
     tostring = x;
@@ -1448,37 +1586,37 @@ var create = (globals) => {
     var __i24 = 0;
     while (__i24 < _35(s)) {
       var __c = char(s, __i24);
-      var __e17;
+      var __e19;
       if (__c === "\n") {
-        __e17 = "\\n";
+        __e19 = "\\n";
       } else {
-        var __e18;
+        var __e20;
         if (__c === "\r") {
-          __e18 = "\\r";
+          __e20 = "\\r";
         } else {
-          var __e19;
+          var __e21;
           if (__c === "\"") {
-            __e19 = "\\\"";
+            __e21 = "\\\"";
           } else {
-            var __e20;
+            var __e22;
             if (__c === "\\") {
-              __e20 = "\\\\";
+              __e22 = "\\\\";
             } else {
-              __e20 = __c;
+              __e22 = __c;
             }
-            __e19 = __e20;
+            __e21 = __e22;
           }
-          __e18 = __e19;
+          __e20 = __e21;
         }
-        __e17 = __e18;
+        __e19 = __e20;
       }
-      var __c1 = __e17;
+      var __c1 = __e19;
       __s1 = __s1 + __c1;
       __i24 = __i24 + 1;
     }
     return __s1 + "\"";
   };
-  _G._42ns42().intern("escape").bindRoot(escape, () => {
+  currentNs().intern("escape").bindRoot(escape, () => {
     return escape;
   }, (x) => {
     escape = x;
@@ -1486,26 +1624,30 @@ var create = (globals) => {
   });
   _G.escape = escape;
   var simpleId63 = (x) => {
-    var __id4 = string63(x);
-    var __e21;
-    if (__id4) {
-      var ____id = (() => {
-        try {
-          return [true, readString(x)];
-        }
-        catch (__e98) {
-          return [false, __e98];
-        }
-      })();
-      var __ok = ____id[0];
-      var __v12 = ____id[1];
-      __e21 = __ok && __v12 === x;
+    if (sym63(x)) {
+      return simpleId63(str(x));
     } else {
-      __e21 = __id4;
+      var __id6 = string63(x);
+      var __e23;
+      if (__id6) {
+        var ____id1 = (() => {
+          try {
+            return [true, readString(x)];
+          }
+          catch (__e106) {
+            return [false, __e106];
+          }
+        })();
+        var __ok = ____id1[0];
+        var __v12 = ____id1[1];
+        __e23 = __ok && eq(__v12, x);
+      } else {
+        __e23 = __id6;
+      }
+      return __e23;
     }
-    return __e21;
   };
-  _G._42ns42().intern("simple-id?").bindRoot(simpleId63, () => {
+  currentNs().intern("simple-id?").bindRoot(simpleId63, () => {
     return simpleId63;
   }, (x) => {
     simpleId63 = x;
@@ -1557,38 +1699,38 @@ var create = (globals) => {
                             var __sp = "";
                             var __xs11 = [];
                             var __ks = [];
-                            var __l6 = stack || [];
-                            add(__l6, x);
+                            var __l7 = stack || [];
+                            add(__l7, x);
                             var ____o13 = x;
                             var __k20 = undefined;
                             for (__k20 in ____o13) {
                               var __v13 = ____o13[__k20];
-                              var __e22;
+                              var __e24;
                               if (numeric63(__k20)) {
-                                __e22 = parseInt(__k20);
+                                __e24 = parseInt(__k20);
                               } else {
-                                __e22 = __k20;
+                                __e24 = __k20;
                               }
-                              var __k21 = __e22;
+                              var __k21 = __e24;
                               if (number63(__k21)) {
-                                __xs11[__k21] = str(__v13, __l6);
+                                __xs11[__k21] = str(__v13, __l7);
                               } else {
-                                add(__ks, str(__k21, __l6) + ":");
-                                add(__ks, str(__v13, __l6));
+                                add(__ks, str(__k21, __l7) + ":");
+                                add(__ks, str(__v13, __l7));
                               }
                             }
-                            drop(__l6);
+                            drop(__l7);
                             var ____o14 = join(__xs11, __ks);
                             var ____i26 = undefined;
                             for (____i26 in ____o14) {
                               var __v14 = ____o14[____i26];
-                              var __e23;
+                              var __e25;
                               if (numeric63(____i26)) {
-                                __e23 = parseInt(____i26);
+                                __e25 = parseInt(____i26);
                               } else {
-                                __e23 = ____i26;
+                                __e25 = ____i26;
                               }
-                              var ____i261 = __e23;
+                              var ____i261 = __e25;
                               __s = __s + __sp + __v14;
                               __sp = " ";
                             }
@@ -1606,7 +1748,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("str").bindRoot(str, () => {
+  currentNs().intern("str").bindRoot(str, () => {
     return str;
   }, (x) => {
     str = x;
@@ -1617,69 +1759,164 @@ var create = (globals) => {
     var __args = stash(args);
     return f.apply(f, __args);
   };
-  _G._42ns42().intern("apply").bindRoot(apply, () => {
+  currentNs().intern("apply").bindRoot(apply, () => {
     return apply;
   }, (x) => {
     apply = x;
     return apply;
   });
   _G.apply = apply;
-  var call = (f, ...__r282) => {
-    var ____r282 = unstash(__r282);
-    var __f = destash33(f, ____r282);
-    var ____id1 = ____r282;
-    var __args11 = cut(____id1, 0);
-    return apply(__f, __args11);
+  var call = (f, ...__r310) => {
+    var ____r310 = unstash(__r310);
+    var __f = destash33(f, ____r310);
+    var ____id2 = ____r310;
+    var __args11 = cut(____id2, 0);
+    return _G.apply(__f, __args11);
   };
-  _G._42ns42().intern("call").bindRoot(call, () => {
+  currentNs().intern("call").bindRoot(call, () => {
     return call;
   }, (x) => {
     call = x;
     return call;
   });
   _G.call = call;
-  var setenv = (k, ...__r285) => {
-    var ____r285 = unstash(__r285);
-    var __k22 = destash33(k, ____r285);
-    var ____id2 = ____r285;
-    var __keys = cut(____id2, 0);
+  var setenv = (k, ...__r313) => {
+    var ____r313 = unstash(__r313);
+    var __k22 = destash33(k, ____r313);
+    var ____id3 = ____r313;
+    var __keys = cut(____id3, 0);
+    if (sym63(__k22)) {
+      __k22 = str(__k22);
+    }
     if (string63(__k22)) {
-      var __e24;
+      var __e26;
       if (__keys.toplevel) {
-        __e24 = hd(_G.environment);
+        __e26 = hd(_G.environment);
       } else {
-        __e24 = last(_G.environment);
+        __e26 = last(_G.environment);
       }
-      var __frame = __e24;
+      var __frame = __e26;
       var __entry = __frame[__k22] || {};
       var ____o15 = __keys;
       var __k23 = undefined;
       for (__k23 in ____o15) {
         var __v15 = ____o15[__k23];
-        var __e25;
+        var __e27;
         if (numeric63(__k23)) {
-          __e25 = parseInt(__k23);
+          __e27 = parseInt(__k23);
         } else {
-          __e25 = __k23;
+          __e27 = __k23;
         }
-        var __k24 = __e25;
+        var __k24 = __e27;
         __entry[__k24] = __v15;
       }
       __frame[__k22] = __entry;
       return __frame[__k22];
     }
   };
-  _G._42ns42().intern("setenv").bindRoot(setenv, () => {
+  currentNs().intern("setenv").bindRoot(setenv, () => {
     return setenv;
   }, (x) => {
     setenv = x;
     return setenv;
   });
   _G.setenv = setenv;
+  var fetchenv = (k, ...__r316) => {
+    var ____r316 = unstash(__r316);
+    var __k25 = destash33(k, ____r316);
+    var ____id4 = ____r316;
+    var __keys1 = cut(____id4, 0);
+    if (sym63(__k25)) {
+      __k25 = str(__k25);
+    }
+    if (string63(__k25)) {
+      var __e28;
+      if (__keys1.toplevel) {
+        __e28 = hd(_G.environment);
+      } else {
+        __e28 = last(_G.environment);
+      }
+      var __frame1 = __e28;
+      var __entry1 = __frame1[__k25] || {};
+      __frame1[__k25] = __entry1;
+      return __frame1[__k25];
+    }
+  };
+  currentNs().intern("fetchenv").bindRoot(fetchenv, () => {
+    return fetchenv;
+  }, (x) => {
+    fetchenv = x;
+    return fetchenv;
+  });
+  _G.fetchenv = fetchenv;
+  var assignenv = (k, p, toplevel63) => {
+    if (sym63(k)) {
+      k = str(k);
+    }
+    if (string63(k)) {
+      var __e29;
+      if (keys.toplevel) {
+        __e29 = hd(_G.environment);
+      } else {
+        __e29 = last(_G.environment);
+      }
+      var __frame2 = __e29;
+      var __entry2 = __frame2[k] || {};
+      __frame2[k] = p;
+      return k;
+    }
+  };
+  currentNs().intern("assignenv").bindRoot(assignenv, () => {
+    return assignenv;
+  }, (x) => {
+    assignenv = x;
+    return assignenv;
+  });
+  _G.assignenv = assignenv;
+  var putenv = (name, kind, x, __x12, toplevel63) => {
+    var __e30;
+    if (is63(__x12)) {
+      __e30 = __x12;
+    } else {
+      __e30 = {};
+    }
+    var __props = __e30;
+    if (sym63(name)) {
+      name = str(name);
+    }
+    if (string63(name)) {
+      var __p1 = Object.assign({}, __props, {[kind]: x});
+      var __ns4 = currentNs();
+      var __full = __ns4.name + "/" + name;
+      var __val = __ns4.intern(name).deref(__p1);
+      _G.environment[edge(_G.environment)][__full] = __p1;
+      return __p1;
+    }
+  };
+  currentNs().intern("putenv").bindRoot(putenv, () => {
+    return putenv;
+  }, (x) => {
+    putenv = x;
+    return putenv;
+  });
+  _G.putenv = putenv;
+  var setenv37 = (name, kind, x, props, toplevel63) => {
+    var __e = assignenv(name, putenv(name, kind, x, props, toplevel63), toplevel63);
+    if (__e) {
+      return currentNs().intern(__e);
+    }
+  };
+  currentNs().intern("setenv%").bindRoot(setenv37, () => {
+    return setenv37;
+  }, (x) => {
+    setenv37 = x;
+    return setenv37;
+  });
+  _G.setenv37 = setenv37;
   var print = (x) => {
     return console.log(x);
   };
-  _G._42ns42().intern("print").bindRoot(print, () => {
+  currentNs().intern("print").bindRoot(print, () => {
     return print;
   }, (x) => {
     print = x;
@@ -1687,7 +1924,7 @@ var create = (globals) => {
   });
   _G.print = print;
   abs = Math.abs;
-  _G._42ns42().intern("abs").bindRoot(abs, () => {
+  currentNs().intern("abs").bindRoot(abs, () => {
     return abs;
   }, (x) => {
     abs = x;
@@ -1695,7 +1932,7 @@ var create = (globals) => {
   });
   _G.abs = abs;
   acos = Math.acos;
-  _G._42ns42().intern("acos").bindRoot(acos, () => {
+  currentNs().intern("acos").bindRoot(acos, () => {
     return acos;
   }, (x) => {
     acos = x;
@@ -1703,7 +1940,7 @@ var create = (globals) => {
   });
   _G.acos = acos;
   asin = Math.asin;
-  _G._42ns42().intern("asin").bindRoot(asin, () => {
+  currentNs().intern("asin").bindRoot(asin, () => {
     return asin;
   }, (x) => {
     asin = x;
@@ -1711,7 +1948,7 @@ var create = (globals) => {
   });
   _G.asin = asin;
   atan = Math.atan;
-  _G._42ns42().intern("atan").bindRoot(atan, () => {
+  currentNs().intern("atan").bindRoot(atan, () => {
     return atan;
   }, (x) => {
     atan = x;
@@ -1719,7 +1956,7 @@ var create = (globals) => {
   });
   _G.atan = atan;
   atan2 = Math.atan2;
-  _G._42ns42().intern("atan2").bindRoot(atan2, () => {
+  currentNs().intern("atan2").bindRoot(atan2, () => {
     return atan2;
   }, (x) => {
     atan2 = x;
@@ -1727,7 +1964,7 @@ var create = (globals) => {
   });
   _G.atan2 = atan2;
   ceil = Math.ceil;
-  _G._42ns42().intern("ceil").bindRoot(ceil, () => {
+  currentNs().intern("ceil").bindRoot(ceil, () => {
     return ceil;
   }, (x) => {
     ceil = x;
@@ -1735,7 +1972,7 @@ var create = (globals) => {
   });
   _G.ceil = ceil;
   cos = Math.cos;
-  _G._42ns42().intern("cos").bindRoot(cos, () => {
+  currentNs().intern("cos").bindRoot(cos, () => {
     return cos;
   }, (x) => {
     cos = x;
@@ -1743,7 +1980,7 @@ var create = (globals) => {
   });
   _G.cos = cos;
   floor = Math.floor;
-  _G._42ns42().intern("floor").bindRoot(floor, () => {
+  currentNs().intern("floor").bindRoot(floor, () => {
     return floor;
   }, (x) => {
     floor = x;
@@ -1751,7 +1988,7 @@ var create = (globals) => {
   });
   _G.floor = floor;
   log = Math.log;
-  _G._42ns42().intern("log").bindRoot(log, () => {
+  currentNs().intern("log").bindRoot(log, () => {
     return log;
   }, (x) => {
     log = x;
@@ -1759,7 +1996,7 @@ var create = (globals) => {
   });
   _G.log = log;
   log10 = Math.log10;
-  _G._42ns42().intern("log10").bindRoot(log10, () => {
+  currentNs().intern("log10").bindRoot(log10, () => {
     return log10;
   }, (x) => {
     log10 = x;
@@ -1767,7 +2004,7 @@ var create = (globals) => {
   });
   _G.log10 = log10;
   max = Math.max;
-  _G._42ns42().intern("max").bindRoot(max, () => {
+  currentNs().intern("max").bindRoot(max, () => {
     return max;
   }, (x) => {
     max = x;
@@ -1775,7 +2012,7 @@ var create = (globals) => {
   });
   _G.max = max;
   min = Math.min;
-  _G._42ns42().intern("min").bindRoot(min, () => {
+  currentNs().intern("min").bindRoot(min, () => {
     return min;
   }, (x) => {
     min = x;
@@ -1783,7 +2020,7 @@ var create = (globals) => {
   });
   _G.min = min;
   pow = Math.pow;
-  _G._42ns42().intern("pow").bindRoot(pow, () => {
+  currentNs().intern("pow").bindRoot(pow, () => {
     return pow;
   }, (x) => {
     pow = x;
@@ -1791,7 +2028,7 @@ var create = (globals) => {
   });
   _G.pow = pow;
   random = Math.random;
-  _G._42ns42().intern("random").bindRoot(random, () => {
+  currentNs().intern("random").bindRoot(random, () => {
     return random;
   }, (x) => {
     random = x;
@@ -1799,7 +2036,7 @@ var create = (globals) => {
   });
   _G.random = random;
   sin = Math.sin;
-  _G._42ns42().intern("sin").bindRoot(sin, () => {
+  currentNs().intern("sin").bindRoot(sin, () => {
     return sin;
   }, (x) => {
     sin = x;
@@ -1807,7 +2044,7 @@ var create = (globals) => {
   });
   _G.sin = sin;
   sinh = Math.sinh;
-  _G._42ns42().intern("sinh").bindRoot(sinh, () => {
+  currentNs().intern("sinh").bindRoot(sinh, () => {
     return sinh;
   }, (x) => {
     sinh = x;
@@ -1815,7 +2052,7 @@ var create = (globals) => {
   });
   _G.sinh = sinh;
   sqrt = Math.sqrt;
-  _G._42ns42().intern("sqrt").bindRoot(sqrt, () => {
+  currentNs().intern("sqrt").bindRoot(sqrt, () => {
     return sqrt;
   }, (x) => {
     sqrt = x;
@@ -1823,7 +2060,7 @@ var create = (globals) => {
   });
   _G.sqrt = sqrt;
   tan = Math.tan;
-  _G._42ns42().intern("tan").bindRoot(tan, () => {
+  currentNs().intern("tan").bindRoot(tan, () => {
     return tan;
   }, (x) => {
     tan = x;
@@ -1831,7 +2068,7 @@ var create = (globals) => {
   });
   _G.tan = tan;
   tanh = Math.tanh;
-  _G._42ns42().intern("tanh").bindRoot(tanh, () => {
+  currentNs().intern("tanh").bindRoot(tanh, () => {
     return tanh;
   }, (x) => {
     tanh = x;
@@ -1839,54 +2076,51 @@ var create = (globals) => {
   });
   _G.tanh = tanh;
   trunc = Math.floor;
-  _G._42ns42().intern("trunc").bindRoot(trunc, () => {
+  currentNs().intern("trunc").bindRoot(trunc, () => {
     return trunc;
   }, (x) => {
     trunc = x;
     return trunc;
   });
   _G.trunc = trunc;
-  _G._42ns42("dax.macros");
-  setenv("current-ns", {["_stash"]: true, ["macro"]: (...args) => {
-    var __args2 = unstash(args);
-    return ["_G", join([".*ns*"], __args2)];
-  }});
-  setenv("ns", {["_stash"]: true, ["macro"]: (name) => {
-    return ["current-ns", escape(name)];
-  }});
-  setenv("deref", {["_stash"]: true, ["macro"]: (ns, name, ...__r332) => {
-    var ____r332 = unstash(__r332);
-    var __ns3 = destash33(ns, ____r332);
-    var __name = destash33(name, ____r332);
-    var ____id5 = ____r332;
-    var __args3 = cut(____id5, 0);
-    return join([["_G", ".Namespace", ".find", ["quote", __ns3]], [".intern", ["quote", __name]], [".deref"]], __args3);
-  }});
-  setenv("setq", {["_stash"]: true, ["macro"]: (ns, name, value) => {
+  _G.currentNs("dax.macros");
+  setenv37("ns", "macro", (name) => {
+    _G.nsPrefix = name;
+    return ["_G", ".current-ns", ["quote", name]];
+  });
+  setenv37("deref", "macro", (ns, name, ...__r372) => {
+    var ____r372 = unstash(__r372);
+    var __ns5 = destash33(ns, ____r372);
+    var __name1 = destash33(name, ____r372);
+    var ____id7 = ____r372;
+    var __args2 = cut(____id7, 0);
+    return join([["_G", ".Namespace", ".find", ["quote", __ns5]], [".intern", ["quote", __name1]], [".deref"]], __args2);
+  });
+  setenv37("setq", "macro", (ns, name, value) => {
     return [["_G", ".Namespace", ".find", ["quote", ns]], [".intern", ["quote", name]], [".deref", value]];
-  }});
-  setenv("quote", {["_stash"]: true, ["macro"]: (form) => {
+  });
+  setenv37("quote", "macro", (form) => {
     return quoted(form);
-  }});
-  setenv("quasiquote", {["_stash"]: true, ["macro"]: (form) => {
+  });
+  setenv37("quasiquote", "macro", (form) => {
     return quasiexpand(form, 1);
-  }});
-  setenv("set", {["_stash"]: true, ["macro"]: (...args) => {
-    var __args4 = unstash(args);
-    return join(["do"], map((__x11) => {
-      var ____id6 = __x11;
-      var __lh = ____id6[0];
-      var __rh = ____id6[1];
+  });
+  setenv37("set", "macro", (...args) => {
+    var __args3 = unstash(args);
+    return join(["do"], map((__x13) => {
+      var ____id8 = __x13;
+      var __lh = ____id8[0];
+      var __rh = ____id8[1];
       return ["%set", __lh, __rh];
-    }, pair(__args4)));
-  }});
-  setenv("at", {["_stash"]: true, ["macro"]: (l, i) => {
+    }, pair(__args3)));
+  });
+  setenv37("at", "macro", (l, i) => {
     return [l, ["brackets", i]];
-  }});
-  setenv("wipe", {["_stash"]: true, ["macro"]: (place) => {
+  });
+  setenv37("wipe", "macro", (place) => {
     return ["%delete", place];
-  }});
-  setenv("list", {["_stash"]: true, ["macro"]: (...body) => {
+  });
+  setenv37("list", "macro", (...body) => {
     var __body = unstash(body);
     if (keys63(__body)) {
       return join(["%object"], mapo((x) => {
@@ -1895,29 +2129,29 @@ var create = (globals) => {
     } else {
       return join(["%array"], __body);
     }
-  }});
-  setenv("if", {["_stash"]: true, ["macro"]: (...branches) => {
+  });
+  setenv37("if", "macro", (...branches) => {
     var __branches = unstash(branches);
     return hd(expandIf(__branches));
-  }});
-  setenv("case", {["_stash"]: true, ["macro"]: (expr, ...__r340) => {
-    var ____r340 = unstash(__r340);
-    var __expr = destash33(expr, ____r340);
-    var ____id7 = ____r340;
-    var __clauses = cut(____id7, 0);
-    var __x12 = unique("x");
+  });
+  setenv37("case", "macro", (expr, ...__r380) => {
+    var ____r380 = unstash(__r380);
+    var __expr = destash33(expr, ____r380);
+    var ____id9 = ____r380;
+    var __clauses = cut(____id9, 0);
+    var __x14 = unique("x");
     var __eq = (_) => {
-      if (_ === "else") {
+      if (eq(_, "else")) {
         return true;
       } else {
-        return ["=", _, __x12];
+        return ["=", _, __x14];
       }
     };
-    var __cl = (__x13) => {
-      var ____id8 = __x13;
-      var __a1 = ____id8[0];
-      var __body1 = cut(____id8, 1);
-      if (string63(__a1) || number63(__a1) || hd(__a1) === "quote") {
+    var __cl = (__x15) => {
+      var ____id10 = __x15;
+      var __a1 = ____id10[0];
+      var __body1 = cut(____id10, 1);
+      if (string63(__a1) || number63(__a1) || __eq(hd(__a1), "quote")) {
         return [__eq(__a1), join(["do"], __body1)];
       } else {
         if (one63(__a1)) {
@@ -1929,441 +2163,451 @@ var create = (globals) => {
         }
       }
     };
-    return ["let", __x12, __expr, join(["if"], apply(join, map(__cl, __clauses)))];
-  }});
-  setenv("when", {["_stash"]: true, ["macro"]: (cond, ...__r343) => {
-    var ____r343 = unstash(__r343);
-    var __cond = destash33(cond, ____r343);
-    var ____id9 = ____r343;
-    var __body2 = cut(____id9, 0);
+    return ["let", __x14, __expr, join(["if"], _G.apply(join, map(__cl, __clauses)))];
+  });
+  setenv37("when", "macro", (cond, ...__r383) => {
+    var ____r383 = unstash(__r383);
+    var __cond = destash33(cond, ____r383);
+    var ____id11 = ____r383;
+    var __body2 = cut(____id11, 0);
     return ["if", __cond, join(["do"], __body2)];
-  }});
-  setenv("unless", {["_stash"]: true, ["macro"]: (cond, ...__r344) => {
-    var ____r344 = unstash(__r344);
-    var __cond1 = destash33(cond, ____r344);
-    var ____id10 = ____r344;
-    var __body3 = cut(____id10, 0);
+  });
+  setenv37("unless", "macro", (cond, ...__r384) => {
+    var ____r384 = unstash(__r384);
+    var __cond1 = destash33(cond, ____r384);
+    var ____id12 = ____r384;
+    var __body3 = cut(____id12, 0);
     return ["if", ["not", __cond1], join(["do"], __body3)];
-  }});
-  setenv("obj", {["_stash"]: true, ["macro"]: (...body) => {
+  });
+  setenv37("obj", "macro", (...body) => {
     var __body4 = unstash(body);
     return join(["%object"], mapo((x) => {
       return x;
     }, __body4));
-  }});
-  setenv("let", {["_stash"]: true, ["macro"]: (bs, ...__r346) => {
-    var ____r346 = unstash(__r346);
-    var __bs = destash33(bs, ____r346);
-    var ____id11 = ____r346;
-    var __body5 = cut(____id11, 0);
+  });
+  setenv37("let", "macro", (bs, ...__r386) => {
+    var ____r386 = unstash(__r386);
+    var __bs = destash33(bs, ____r386);
+    var ____id13 = ____r386;
+    var __body5 = cut(____id13, 0);
     if (atom63(__bs)) {
       return join(["let", [__bs, hd(__body5)]], tl(__body5));
     } else {
       if (none63(__bs)) {
         return join(["do"], __body5);
       } else {
-        var ____id12 = __bs;
-        var __lh1 = ____id12[0];
-        var __rh1 = ____id12[1];
-        var __bs2 = cut(____id12, 2);
-        var ____id13 = bind(__lh1, either(__rh1, "nil"));
-        var __id14 = ____id13[0];
-        var __val = ____id13[1];
-        var __bs1 = cut(____id13, 2);
+        var ____id14 = __bs;
+        var __lh1 = ____id14[0];
+        var __rh1 = ____id14[1];
+        var __bs2 = cut(____id14, 2);
+        var ____id15 = bind(__lh1, either(__rh1, "nil"));
+        var __id16 = ____id15[0];
+        var __val1 = ____id15[1];
+        var __bs1 = cut(____id15, 2);
         var __renames = [];
-        if (! idLiteral63(__id14)) {
-          var __id111 = unique(__id14);
-          __renames = [__id14, __id111];
-          __id14 = __id111;
+        if (! idLiteral63(__id16)) {
+          var __id111 = unique(__id16);
+          __renames = [__id16, __id111];
+          __id16 = __id111;
         }
-        return ["do", ["%local", __id14, __val], ["let-symbol", __renames, join(["let", join(__bs1, __bs2)], __body5)]];
+        return ["do", ["%local", __id16, __val1], ["let-symbol", __renames, join(["let", join(__bs1, __bs2)], __body5)]];
       }
     }
-  }});
-  setenv("with", {["_stash"]: true, ["macro"]: (x, v, ...__r347) => {
-    var ____r347 = unstash(__r347);
-    var __x14 = destash33(x, ____r347);
-    var __v16 = destash33(v, ____r347);
-    var ____id15 = ____r347;
-    var __body6 = cut(____id15, 0);
-    return join(["let", [__x14, __v16]], __body6, [__x14]);
-  }});
-  setenv("let-when", {["_stash"]: true, ["macro"]: (x, v, ...__r348) => {
-    var ____r348 = unstash(__r348);
-    var __x15 = destash33(x, ____r348);
-    var __v17 = destash33(v, ____r348);
-    var ____id16 = ____r348;
-    var __body7 = cut(____id16, 0);
+  });
+  setenv37("with", "macro", (x, v, ...__r387) => {
+    var ____r387 = unstash(__r387);
+    var __x16 = destash33(x, ____r387);
+    var __v16 = destash33(v, ____r387);
+    var ____id17 = ____r387;
+    var __body6 = cut(____id17, 0);
+    return join(["let", [__x16, __v16]], __body6, [__x16]);
+  });
+  setenv37("let-when", "macro", (x, v, ...__r388) => {
+    var ____r388 = unstash(__r388);
+    var __x17 = destash33(x, ____r388);
+    var __v17 = destash33(v, ____r388);
+    var ____id18 = ____r388;
+    var __body7 = cut(____id18, 0);
     var __y4 = unique("y");
-    return ["let", __y4, __v17, ["when", ["yes", __y4], join(["let", [__x15, __y4]], __body7)]];
-  }});
-  setenv("void", {["_stash"]: true, ["macro"]: (...body) => {
+    return ["let", __y4, __v17, ["when", ["yes", __y4], join(["let", [__x17, __y4]], __body7)]];
+  });
+  setenv37("void", "macro", (...body) => {
     var __body8 = unstash(body);
     return join(["do"], __body8, [["do"]]);
-  }});
-  setenv("%setenv", {["_stash"]: true, ["macro"]: (name, ...__r349) => {
-    var ____r349 = unstash(__r349);
-    var __name1 = destash33(name, ____r349);
-    var ____id17 = ____r349;
-    var __keys1 = cut(____id17, 0);
-    return ["void", join(["setenv", ["quote", __name1]], __keys1)];
-  }});
-  setenv("define-macro", {["_stash"]: true, ["macro"]: (name, args, ...__r350) => {
-    var ____r350 = unstash(__r350);
-    var __name2 = destash33(name, ____r350);
-    var __args5 = destash33(args, ____r350);
-    var ____id18 = ____r350;
-    var __body9 = cut(____id18, 0);
-    return {[0]: "%setenv", [1]: __name2, ["macro"]: join(["fn", __args5], __body9)};
-  }});
-  setenv("define-special", {["_stash"]: true, ["macro"]: (name, args, ...__r351) => {
-    var ____r351 = unstash(__r351);
-    var __name3 = destash33(name, ____r351);
-    var __args6 = destash33(args, ____r351);
-    var ____id19 = ____r351;
-    var __body10 = cut(____id19, 0);
-    return join({[0]: "%setenv", [1]: __name3, ["special"]: join(["fn", __args6], __body10)}, keys(__body10));
-  }});
-  setenv("define-symbol-macro", {["_stash"]: true, ["macro"]: (name, expansion) => {
-    return {[0]: "%setenv", [1]: name, ["symbol"]: ["quote", expansion]};
-  }});
-  setenv("define-reader", {["_stash"]: true, ["macro"]: (__x16, ...__r353) => {
-    var ____id20 = __x16;
-    var __char = ____id20[0];
-    var __s11 = ____id20[1];
-    var ____r353 = unstash(__r353);
-    var ____x16 = destash33(__x16, ____r353);
-    var ____id21 = ____r353;
-    var __body11 = cut(____id21, 0);
+  });
+  setenv37("%setenv", "macro", (name, kind, ...__r389) => {
+    var ____r389 = unstash(__r389);
+    var __name2 = destash33(name, ____r389);
+    var __kind = destash33(kind, ____r389);
+    var ____id19 = ____r389;
+    var __keys2 = cut(____id19, 0);
+    var __ks1 = cut(__keys2);
+    delete __ks1[__kind];
+    return ["void", join(["setenv%", ["quote", __name2], ["quote", __kind], __keys2[__kind]], __ks1)];
+  });
+  setenv37("define-macro", "macro", (name, args, ...__r390) => {
+    var ____r390 = unstash(__r390);
+    var __name3 = destash33(name, ____r390);
+    var __args4 = destash33(args, ____r390);
+    var ____id20 = ____r390;
+    var __body9 = cut(____id20, 0);
+    return {[0]: "%setenv", [1]: __name3, [2]: "macro", ["macro"]: join(["fn", __args4], __body9)};
+  });
+  setenv37("define-special", "macro", (name, args, ...__r391) => {
+    var ____r391 = unstash(__r391);
+    var __name4 = destash33(name, ____r391);
+    var __args5 = destash33(args, ____r391);
+    var ____id21 = ____r391;
+    var __body10 = cut(____id21, 0);
+    return join({[0]: "%setenv", [1]: __name4, [2]: "special", ["special"]: join(["fn", __args5], __body10)}, keys(__body10));
+  });
+  setenv37("define-symbol-macro", "macro", (name, expansion) => {
+    return ["void", {[0]: "setenv", [1]: ["quote", name], ["symbol"]: ["quote", expansion]}];
+  });
+  setenv37("define-reader", "macro", (__x18, ...__r393) => {
+    var ____id22 = __x18;
+    var __char = ____id22[0];
+    var __s11 = ____id22[1];
+    var ____r393 = unstash(__r393);
+    var ____x18 = destash33(__x18, ____r393);
+    var ____id23 = ____r393;
+    var __body11 = cut(____id23, 0);
     return ["set", ["read-table", ["brackets", __char]], join(["fn", [__s11]], __body11)];
-  }});
-  setenv("alter-definition", {["_stash"]: true, ["macro"]: (name) => {
+  });
+  setenv37("alter-definition", "macro", (name) => {
     return [["current-ns"], ".intern", ["quote", name], ".bind-root", name, ["fn", join(), name], ["fn", ["x"], ["set", name, "x"]]];
-  }});
-  setenv("define", {["_stash"]: true, ["macro"]: (name, x, ...__r355) => {
-    var ____r355 = unstash(__r355);
-    var __name4 = destash33(name, ____r355);
-    var __x17 = destash33(x, ____r355);
-    var ____id22 = ____r355;
-    var __body12 = cut(____id22, 0);
-    setenv(__name4, {["_stash"]: true, ["variable"]: true});
-    var __e27;
+  });
+  setenv37("define", "macro", (name, x, ...__r395) => {
+    var ____r395 = unstash(__r395);
+    var __name5 = destash33(name, ____r395);
+    var __x19 = destash33(x, ____r395);
+    var ____id24 = ____r395;
+    var __body12 = cut(____id24, 0);
+    setenv(__name5, {["_stash"]: true, ["variable"]: true});
+    var __e32;
     if (some63(__body12)) {
-      __e27 = join(["%local-function", __name4], bind42(__x17, __body12));
+      __e32 = join(["%local-function", __name5], bind42(__x19, __body12));
     } else {
-      __e27 = ["%local", __name4, __x17];
+      __e32 = ["%local", __name5, __x19];
     }
-    var __form = __e27;
-    return ["do", __form, ["alter-definition", __name4]];
-  }});
-  setenv("define-global", {["_stash"]: true, ["macro"]: (name, x, ...__r356) => {
-    var ____r356 = unstash(__r356);
-    var __name5 = destash33(name, ____r356);
-    var __x18 = destash33(x, ____r356);
-    var ____id23 = ____r356;
-    var __body13 = cut(____id23, 0);
-    setenv(__name5, {["_stash"]: true, ["toplevel"]: true, ["variable"]: true});
-    var __e28;
+    var __form = __e32;
+    return ["do", __form, ["alter-definition", __name5]];
+  });
+  setenv37("define-global", "macro", (name, x, ...__r396) => {
+    var ____r396 = unstash(__r396);
+    var __name6 = destash33(name, ____r396);
+    var __x20 = destash33(x, ____r396);
+    var ____id25 = ____r396;
+    var __body13 = cut(____id25, 0);
+    setenv(__name6, {["_stash"]: true, ["toplevel"]: true, ["variable"]: true});
+    var __e33;
     if (some63(__body13)) {
-      __e28 = join(["%global-function", __name5], bind42(__x18, __body13));
+      __e33 = join(["%global-function", __name6], bind42(__x20, __body13));
     } else {
-      __e28 = ["%set", __name5, __x18];
+      __e33 = ["%set", __name6, __x20];
     }
-    return ["do", __e28, ["alter-definition", __name5], ["%set", ["_G", "." + __name5], __name5]];
-  }});
-  setenv("with-frame", {["_stash"]: true, ["macro"]: (...body) => {
+    return ["do", __e33, ["alter-definition", __name6], ["%set", ["_G", "." + __name6], __name6]];
+  });
+  setenv37("with-frame", "macro", (...body) => {
     var __body14 = unstash(body);
-    var __x19 = unique("x");
-    return ["do", ["add", ["_G", ".environment"], ["obj"]], ["with", __x19, join(["do"], __body14), ["drop", ["_G", ".environment"]]]];
-  }});
-  setenv("with-bindings", {["_stash"]: true, ["macro"]: (__x20, ...__r357) => {
-    var ____id24 = __x20;
-    var __names = ____id24[0];
-    var ____r357 = unstash(__r357);
-    var ____x20 = destash33(__x20, ____r357);
-    var ____id25 = ____r357;
-    var __body15 = cut(____id25, 0);
     var __x21 = unique("x");
-    return join(["with-frame", ["each", __x21, __names, ["if", ["default-assignment?", __x21], {[0]: "setenv", [1]: ["at", __x21, 1], ["variable"]: true}, {[0]: "setenv", [1]: __x21, ["variable"]: true}]]], __body15);
-  }});
-  setenv("let-macro", {["_stash"]: true, ["macro"]: (definitions, ...__r358) => {
-    var ____r358 = unstash(__r358);
-    var __definitions = destash33(definitions, ____r358);
-    var ____id26 = ____r358;
-    var __body16 = cut(____id26, 0);
+    return ["do", ["add", ["_G", ".environment"], ["obj"]], ["with", __x21, join(["do"], __body14), ["drop", ["_G", ".environment"]]]];
+  });
+  setenv37("with-bindings", "macro", (__x22, ...__r397) => {
+    var ____id26 = __x22;
+    var __names = ____id26[0];
+    var ____r397 = unstash(__r397);
+    var ____x22 = destash33(__x22, ____r397);
+    var ____id27 = ____r397;
+    var __body15 = cut(____id27, 0);
+    var __x23 = unique("x");
+    return join(["with-frame", ["each", __x23, __names, ["if", ["default-assignment?", __x23], {[0]: "setenv", [1]: ["at", __x23, 1], ["variable"]: true}, {[0]: "setenv", [1]: __x23, ["variable"]: true}]]], __body15);
+  });
+  setenv37("let-macro", "macro", (definitions, ...__r398) => {
+    var ____r398 = unstash(__r398);
+    var __definitions = destash33(definitions, ____r398);
+    var ____id28 = ____r398;
+    var __body16 = cut(____id28, 0);
     add(_G.environment, {});
     map((m) => {
       return _eval(join(["define-macro"], m));
     }, __definitions);
-    var ____x22 = join(["do"], macroexpand(__body16));
+    var ____x24 = join(["do"], macroexpand(__body16));
     drop(_G.environment);
-    return ____x22;
-  }});
-  setenv("let-symbol", {["_stash"]: true, ["macro"]: (expansions, ...__r360) => {
-    var ____r360 = unstash(__r360);
-    var __expansions = destash33(expansions, ____r360);
-    var ____id27 = ____r360;
-    var __body17 = cut(____id27, 0);
+    return ____x24;
+  });
+  setenv37("let-symbol", "macro", (expansions, ...__r400) => {
+    var ____r400 = unstash(__r400);
+    var __expansions = destash33(expansions, ____r400);
+    var ____id29 = ____r400;
+    var __body17 = cut(____id29, 0);
     add(_G.environment, {});
-    map((__x24) => {
-      var ____id28 = __x24;
-      var __name6 = ____id28[0];
-      var __exp = ____id28[1];
-      return _eval(["define-symbol-macro", __name6, __exp]);
+    map((__x26) => {
+      var ____id30 = __x26;
+      var __name7 = ____id30[0];
+      var __exp = ____id30[1];
+      return _eval(["define-symbol-macro", __name7, __exp]);
     }, pair(__expansions));
-    var ____x23 = join(["do"], macroexpand(__body17));
+    var ____x25 = join(["do"], macroexpand(__body17));
     drop(_G.environment);
-    return ____x23;
-  }});
-  setenv("let-unique", {["_stash"]: true, ["macro"]: (names, ...__r362) => {
-    var ____r362 = unstash(__r362);
-    var __names1 = destash33(names, ____r362);
-    var ____id29 = ____r362;
-    var __body18 = cut(____id29, 0);
+    return ____x25;
+  });
+  setenv37("let-unique", "macro", (names, ...__r402) => {
+    var ____r402 = unstash(__r402);
+    var __names1 = destash33(names, ____r402);
+    var ____id31 = ____r402;
+    var __body18 = cut(____id31, 0);
     var __bs11 = map((n) => {
       return [n, ["unique", ["quote", n]]];
     }, __names1);
-    return join(["let", apply(join, __bs11)], __body18);
-  }});
-  setenv("fn", {["_stash"]: true, ["macro"]: (args, ...__r364) => {
-    var ____r364 = unstash(__r364);
-    var __args7 = destash33(args, ____r364);
-    var ____id30 = ____r364;
-    var __body19 = cut(____id30, 0);
-    return join(["%function"], bind42(__args7, __body19), keys(__body19));
-  }});
-  setenv("apply", {["_stash"]: true, ["macro"]: (f, ...__r365) => {
-    var ____r365 = unstash(__r365);
-    var __f1 = destash33(f, ____r365);
-    var ____id31 = ____r365;
-    var __args8 = cut(____id31, 0);
-    if (_35(__args8) > 1) {
-      return ["%call", "apply", __f1, ["join", join(["list"], almost(__args8)), last(__args8)]];
+    return join(["let", _G.apply(join, __bs11)], __body18);
+  });
+  setenv37("fn", "macro", (args, ...__r404) => {
+    var ____r404 = unstash(__r404);
+    var __args6 = destash33(args, ____r404);
+    var ____id32 = ____r404;
+    var __body19 = cut(____id32, 0);
+    return join(["%function"], bind42(__args6, __body19), keys(__body19));
+  });
+  setenv37("apply", "macro", (f, ...__r405) => {
+    var ____r405 = unstash(__r405);
+    var __f1 = destash33(f, ____r405);
+    var ____id33 = ____r405;
+    var __args7 = cut(____id33, 0);
+    if (_35(__args7) > 1) {
+      return ["%call", ["_G", ".apply"], __f1, ["join", join(["list"], almost(__args7)), last(__args7)]];
     } else {
-      return join(["%call", "apply", __f1], __args8);
+      return join(["%call", ["_G", ".apply"], __f1], __args7);
     }
-  }});
-  setenv("guard", {["_stash"]: true, ["macro"]: (expr) => {
+  });
+  setenv37("guard", "macro", (expr) => {
     return [["fn", join(), ["%try", ["list", true, expr]]]];
-  }});
-  setenv("each", {["_stash"]: true, ["macro"]: (x, t, ...__r367) => {
-    var ____r367 = unstash(__r367);
-    var __x25 = destash33(x, ____r367);
-    var __t2 = destash33(t, ____r367);
-    var ____id32 = ____r367;
-    var __body20 = cut(____id32, 0);
+  });
+  setenv37("each", "macro", (x, t, ...__r407) => {
+    var ____r407 = unstash(__r407);
+    var __x27 = destash33(x, ____r407);
+    var __t2 = destash33(t, ____r407);
+    var ____id34 = ____r407;
+    var __body20 = cut(____id34, 0);
     var __o16 = unique("o");
     var __n23 = unique("n");
     var __i28 = unique("i");
-    var __e29;
-    if (atom63(__x25)) {
-      __e29 = [__i28, __x25];
+    var __e34;
+    if (atom63(__x27)) {
+      __e34 = [__i28, __x27];
     } else {
-      var __e30;
-      if (_35(__x25) > 1) {
-        __e30 = __x25;
+      var __e35;
+      if (_35(__x27) > 1) {
+        __e35 = __x27;
       } else {
-        __e30 = [__i28, hd(__x25)];
+        __e35 = [__i28, hd(__x27)];
       }
-      __e29 = __e30;
+      __e34 = __e35;
     }
-    var ____id33 = __e29;
-    var __k25 = ____id33[0];
-    var __v18 = ____id33[1];
-    return ["let", [__o16, __t2, __k25, "nil"], ["%for", __o16, __k25, ["let", [__v18, [__o16, ["brackets", __k25]]], join(["let", __k25, ["if", ["numeric?", __k25], ["parseInt", __k25], __k25]], __body20)]]];
-  }});
-  setenv("for", {["_stash"]: true, ["macro"]: (i, to, ...__r368) => {
-    var ____r368 = unstash(__r368);
-    var __i29 = destash33(i, ____r368);
-    var __to = destash33(to, ____r368);
-    var ____id34 = ____r368;
-    var __body21 = cut(____id34, 0);
+    var ____id35 = __e34;
+    var __k26 = ____id35[0];
+    var __v18 = ____id35[1];
+    return ["let", [__o16, __t2, __k26, "nil"], ["%for", __o16, __k26, ["let", [__v18, [__o16, ["brackets", __k26]]], join(["let", __k26, ["if", ["numeric?", __k26], ["parseInt", __k26], __k26]], __body20)]]];
+  });
+  setenv37("for", "macro", (i, to, ...__r408) => {
+    var ____r408 = unstash(__r408);
+    var __i29 = destash33(i, ____r408);
+    var __to = destash33(to, ____r408);
+    var ____id36 = ____r408;
+    var __body21 = cut(____id36, 0);
     return ["let", __i29, 0, join(["while", ["<", __i29, __to]], __body21, [["inc", __i29]])];
-  }});
-  setenv("step", {["_stash"]: true, ["macro"]: (v, t, ...__r369) => {
-    var ____r369 = unstash(__r369);
-    var __v19 = destash33(v, ____r369);
-    var __t3 = destash33(t, ____r369);
-    var ____id35 = ____r369;
-    var __body22 = cut(____id35, 0);
-    var __x26 = unique("x");
+  });
+  setenv37("step", "macro", (v, t, ...__r409) => {
+    var ____r409 = unstash(__r409);
+    var __v19 = destash33(v, ____r409);
+    var __t3 = destash33(t, ____r409);
+    var ____id37 = ____r409;
+    var __body22 = cut(____id37, 0);
+    var __x28 = unique("x");
     var __i30 = unique("i");
-    return ["let", [__x26, __t3], ["for", __i30, ["#", __x26], join(["let", [__v19, ["at", __x26, __i30]]], __body22)]];
-  }});
-  setenv("set-of", {["_stash"]: true, ["macro"]: (...xs) => {
+    return ["let", [__x28, __t3], ["for", __i30, ["#", __x28], join(["let", [__v19, ["at", __x28, __i30]]], __body22)]];
+  });
+  setenv37("set-of", "macro", (...xs) => {
     var __xs12 = unstash(xs);
-    var __l7 = [];
+    var __l8 = [];
     var ____o17 = __xs12;
     var ____i31 = undefined;
     for (____i31 in ____o17) {
-      var __x27 = ____o17[____i31];
-      var __e31;
+      var __x29 = ____o17[____i31];
+      var __e36;
       if (numeric63(____i31)) {
-        __e31 = parseInt(____i31);
+        __e36 = parseInt(____i31);
       } else {
-        __e31 = ____i31;
+        __e36 = ____i31;
       }
-      var ____i311 = __e31;
-      __l7[__x27] = true;
+      var ____i311 = __e36;
+      __l8[__x29] = true;
     }
-    return join(["obj"], __l7);
-  }});
-  setenv("join!", {["_stash"]: true, ["macro"]: (a, ...__r370) => {
-    var ____r370 = unstash(__r370);
-    var __a2 = destash33(a, ____r370);
-    var ____id36 = ____r370;
-    var __bs21 = cut(____id36, 0);
+    return join(["obj"], __l8);
+  });
+  setenv37("join!", "macro", (a, ...__r410) => {
+    var ____r410 = unstash(__r410);
+    var __a2 = destash33(a, ____r410);
+    var ____id38 = ____r410;
+    var __bs21 = cut(____id38, 0);
     return ["set", __a2, join(["join", __a2], __bs21)];
-  }});
-  setenv("cat!", {["_stash"]: true, ["macro"]: (a, ...__r371) => {
-    var ____r371 = unstash(__r371);
-    var __a3 = destash33(a, ____r371);
-    var ____id37 = ____r371;
-    var __bs3 = cut(____id37, 0);
+  });
+  setenv37("cat!", "macro", (a, ...__r411) => {
+    var ____r411 = unstash(__r411);
+    var __a3 = destash33(a, ____r411);
+    var ____id39 = ____r411;
+    var __bs3 = cut(____id39, 0);
     return ["set", __a3, join(["cat", __a3], __bs3)];
-  }});
-  setenv("inc", {["_stash"]: true, ["macro"]: (n, by) => {
-    var __e32;
+  });
+  setenv37("inc", "macro", (n, by) => {
+    var __e37;
     if (nil63(by)) {
-      __e32 = 1;
+      __e37 = 1;
     } else {
-      __e32 = by;
+      __e37 = by;
     }
-    return ["set", n, ["+", n, __e32]];
-  }});
-  setenv("dec", {["_stash"]: true, ["macro"]: (n, by) => {
-    var __e33;
+    return ["set", n, ["+", n, __e37]];
+  });
+  setenv37("dec", "macro", (n, by) => {
+    var __e38;
     if (nil63(by)) {
-      __e33 = 1;
+      __e38 = 1;
     } else {
-      __e33 = by;
+      __e38 = by;
     }
-    return ["set", n, ["-", n, __e33]];
-  }});
-  setenv("with-indent", {["_stash"]: true, ["macro"]: (form) => {
-    var __x28 = unique("x");
-    return ["do", ["inc", "indent-level"], ["with", __x28, form, ["dec", "indent-level"]]];
-  }});
-  setenv("export", {["_stash"]: true, ["macro"]: (...names) => {
+    return ["set", n, ["-", n, __e38]];
+  });
+  setenv37("with-indent", "macro", (form) => {
+    var __x30 = unique("x");
+    return ["do", ["inc", "indent-level"], ["with", __x30, form, ["dec", "indent-level"]]];
+  });
+  setenv37("export", "macro", (...names) => {
     var __names2 = unstash(names);
     return join(["do"], map((k) => {
       return ["set", ["exports", "." + k], k];
     }, __names2));
-  }});
-  setenv("when-compiling", {["_stash"]: true, ["macro"]: (...body) => {
+  });
+  setenv37("when-compiling", "macro", (...body) => {
     var __body23 = unstash(body);
     return _eval(join(["do"], __body23));
-  }});
-  setenv("during-compilation", {["_stash"]: true, ["macro"]: (...body) => {
+  });
+  setenv37("during-compilation", "macro", (...body) => {
     var __body24 = unstash(body);
-    var __x29 = expand(join(["do"], __body24));
-    _eval(__x29);
-    return __x29;
-  }});
-  setenv("class", {["_stash"]: true, ["macro"]: (x, ...__r376) => {
-    var ____r376 = unstash(__r376);
-    var __x30 = destash33(x, ____r376);
-    var ____id38 = ____r376;
-    var __body25 = cut(____id38, 0);
-    if (atom63(__x30)) {
-      return join(["%class", [__x30]], __body25);
+    var __x31 = expand(join(["do"], __body24));
+    _eval(__x31);
+    return __x31;
+  });
+  setenv37("class", "macro", (x, ...__r416) => {
+    var ____r416 = unstash(__r416);
+    var __x32 = destash33(x, ____r416);
+    var ____id40 = ____r416;
+    var __body25 = cut(____id40, 0);
+    if (atom63(__x32)) {
+      return join(["%class", [__x32]], __body25);
     } else {
-      return join(["%class", __x30], __body25);
+      return join(["%class", __x32], __body25);
     }
-  }});
-  setenv(".", {["_stash"]: true, ["macro"]: (...args) => {
-    var __args9 = unstash(args);
-    if (none63(__args9)) {
+  });
+  setenv37(".", "macro", (...args) => {
+    var __args8 = unstash(args);
+    if (none63(__args8)) {
       return ["this", ".constructor"];
     } else {
-      if (one63(__args9)) {
-        return join([".", "this", hd(__args9)], tl(__args9));
+      if (one63(__args8)) {
+        return join([".", "this", hd(__args8)], tl(__args8));
       } else {
-        var ____id39 = __args9;
-        var __name7 = ____id39[0];
-        var __a4 = ____id39[1];
-        var __bs4 = cut(____id39, 2);
-        var __e34;
+        var ____id41 = __args8;
+        var __name8 = ____id41[0];
+        var __a4 = ____id41[1];
+        var __bs4 = cut(____id41, 2);
+        var __e39;
         if (atom63(__a4)) {
-          __e34 = ["quote", compile(__a4)];
+          __e39 = ["quote", compile(__a4)];
         } else {
-          var __e35;
-          if ("quote" === hd(__a4)) {
-            __e35 = ["quote", compile(__a4[1])];
+          var __e40;
+          if (eq(hd(__a4), "quote")) {
+            __e40 = ["quote", compile(__a4[1])];
           } else {
-            __e35 = __a4;
+            __e40 = __a4;
           }
-          __e34 = __e35;
+          __e39 = __e40;
         }
-        var __prop = __e34;
-        var __expr1 = [__name7, ["brackets", __prop]];
-        if (! atom63(__a4) && "quote" === hd(__a4) || stringLiteral63(__a4) || none63(__bs4)) {
+        var __prop = __e39;
+        var __expr1 = [__name8, ["brackets", __prop]];
+        if (! atom63(__a4) && eq(hd(__a4), "quote") || stringLiteral63(__a4) || none63(__bs4)) {
           return __expr1;
         } else {
           return join([__expr1], __bs4);
         }
       }
     }
-  }});
-  setenv("try", {["_stash"]: true, ["macro"]: (...body) => {
+  });
+  setenv37("try", "macro", (...body) => {
     var __body26 = unstash(body);
-    var __e26 = unique("e");
-    return join(["%condition-case", __e26, join(["do"], map((x) => {
+    var __e31 = unique("e");
+    return join(["%condition-case", __e31, join(["do"], map((x) => {
       if (!( obj63(x) && in63(hd(x), ["catch", "finally"]))) {
         return x;
       }
     }, __body26))], map((x) => {
       if (obj63(x)) {
-        if (hd(x) === "finally") {
+        if (eq(hd(x), "finally")) {
           return x;
         } else {
-          if (hd(x) === "catch") {
-            var ____id40 = x;
-            var ___ = ____id40[0];
-            var __type = ____id40[1];
-            var ___var = ____id40[2];
-            var __body27 = cut(____id40, 3);
-            return ["catch", __type, join(["let", [___var, __e26]], __body27)];
+          if (eq(hd(x), "catch")) {
+            var ____id42 = x;
+            var ___ = ____id42[0];
+            var __type = ____id42[1];
+            var ___var = ____id42[2];
+            var __body27 = cut(____id42, 3);
+            return ["catch", __type, join(["let", [___var, __e31]], __body27)];
           }
         }
       }
     }, __body26));
-  }});
-  setenv("throw", {["_stash"]: true, ["macro"]: (x) => {
+  });
+  setenv37("throw", "macro", (x) => {
     return ["%throw", x];
-  }});
-  setenv("brackets", {["_stash"]: true, ["macro"]: (...args) => {
+  });
+  setenv37("brackets", "macro", (...args) => {
+    var __args9 = unstash(args);
+    return join(["%brackets"], __args9);
+  });
+  setenv37("braces", "macro", (...args) => {
     var __args10 = unstash(args);
-    return join(["%brackets"], __args10);
-  }});
-  setenv("braces", {["_stash"]: true, ["macro"]: (...args) => {
-    var __args111 = unstash(args);
-    return join(["%braces"], __args111);
-  }});
+    return join(["%braces"], __args10);
+  });
   var __exports = {};
   var __self = __exports;
   var __module = {["exports"]: __exports};
-  _G._42ns42("dax.compiler");
+  _G.currentNs("dax.compiler");
   var getenv = (k, p) => {
-    if (string63(k)) {
+    var __e50;
+    if (sym63(k)) {
+      __e50 = str(k);
+    } else {
+      __e50 = k;
+    }
+    var __k27 = __e50;
+    if (string63(__k27)) {
       var __i32 = edge(_G.environment);
       while (__i32 >= 0) {
-        var __b3 = _G.environment[__i32][k];
+        var __b3 = _G.environment[__i32][__k27];
         if (is63(__b3)) {
-          var __e45;
+          var __e51;
           if (p) {
-            __e45 = __b3[p];
+            __e51 = __b3[p];
           } else {
-            __e45 = __b3;
+            __e51 = __b3;
           }
-          return __e45;
+          return __e51;
         } else {
           __i32 = __i32 - 1;
         }
       }
     }
   };
-  _G._42ns42().intern("getenv").bindRoot(getenv, () => {
+  currentNs().intern("getenv").bindRoot(getenv, () => {
     return getenv;
   }, (x) => {
     getenv = x;
@@ -2373,7 +2617,7 @@ var create = (globals) => {
   var macroFunction = (k) => {
     return getenv(k, "macro");
   };
-  _G._42ns42().intern("macro-function").bindRoot(macroFunction, () => {
+  currentNs().intern("macro-function").bindRoot(macroFunction, () => {
     return macroFunction;
   }, (x) => {
     macroFunction = x;
@@ -2382,7 +2626,7 @@ var create = (globals) => {
   var macro63 = (k) => {
     return is63(macroFunction(k));
   };
-  _G._42ns42().intern("macro?").bindRoot(macro63, () => {
+  currentNs().intern("macro?").bindRoot(macro63, () => {
     return macro63;
   }, (x) => {
     macro63 = x;
@@ -2391,7 +2635,7 @@ var create = (globals) => {
   var special63 = (k) => {
     return is63(getenv(k, "special"));
   };
-  _G._42ns42().intern("special?").bindRoot(special63, () => {
+  currentNs().intern("special?").bindRoot(special63, () => {
     return special63;
   }, (x) => {
     special63 = x;
@@ -2400,7 +2644,7 @@ var create = (globals) => {
   var specialForm63 = (form) => {
     return ! atom63(form) && special63(hd(form));
   };
-  _G._42ns42().intern("special-form?").bindRoot(specialForm63, () => {
+  currentNs().intern("special-form?").bindRoot(specialForm63, () => {
     return specialForm63;
   }, (x) => {
     specialForm63 = x;
@@ -2409,7 +2653,7 @@ var create = (globals) => {
   var statement63 = (k) => {
     return special63(k) && getenv(k, "stmt");
   };
-  _G._42ns42().intern("statement?").bindRoot(statement63, () => {
+  currentNs().intern("statement?").bindRoot(statement63, () => {
     return statement63;
   }, (x) => {
     statement63 = x;
@@ -2418,7 +2662,7 @@ var create = (globals) => {
   var symbolExpansion = (k) => {
     return getenv(k, "symbol");
   };
-  _G._42ns42().intern("symbol-expansion").bindRoot(symbolExpansion, () => {
+  currentNs().intern("symbol-expansion").bindRoot(symbolExpansion, () => {
     return symbolExpansion;
   }, (x) => {
     symbolExpansion = x;
@@ -2427,7 +2671,7 @@ var create = (globals) => {
   var symbolMacro63 = (k) => {
     return is63(symbolExpansion(k));
   };
-  _G._42ns42().intern("symbol-macro?").bindRoot(symbolMacro63, () => {
+  currentNs().intern("symbol-macro?").bindRoot(symbolMacro63, () => {
     return symbolMacro63;
   }, (x) => {
     symbolMacro63 = x;
@@ -2436,7 +2680,7 @@ var create = (globals) => {
   var variable63 = (k) => {
     return is63(getenv(k, "variable"));
   };
-  _G._42ns42().intern("variable?").bindRoot(variable63, () => {
+  currentNs().intern("variable?").bindRoot(variable63, () => {
     return variable63;
   }, (x) => {
     variable63 = x;
@@ -2445,7 +2689,7 @@ var create = (globals) => {
   var bound63 = (x) => {
     return macro63(x) || special63(x) || symbolMacro63(x) || variable63(x);
   };
-  _G._42ns42().intern("bound?").bindRoot(bound63, () => {
+  currentNs().intern("bound?").bindRoot(bound63, () => {
     return bound63;
   }, (x) => {
     bound63 = x;
@@ -2453,21 +2697,25 @@ var create = (globals) => {
   });
   _G.bound63 = bound63;
   var quoted = (form) => {
-    if (string63(form)) {
-      return escape(form);
+    if (sym63(form)) {
+      return escape(str(form));
     } else {
-      if (atom63(form)) {
-        return form;
+      if (string63(form)) {
+        return escape(form);
       } else {
-        if (keys63(form)) {
-          return join(["%object"], mapo(quoted, form));
+        if (atom63(form)) {
+          return form;
         } else {
-          return join(["%array"], map(quoted, form));
+          if (keys63(form)) {
+            return join(["%object"], mapo(quoted, form));
+          } else {
+            return join(["%array"], map(quoted, form));
+          }
         }
       }
     }
   };
-  _G._42ns42().intern("quoted").bindRoot(quoted, () => {
+  currentNs().intern("quoted").bindRoot(quoted, () => {
     return quoted;
   }, (x) => {
     quoted = x;
@@ -2481,7 +2729,7 @@ var create = (globals) => {
       return quoted(s);
     }
   };
-  _G._42ns42().intern("literal").bindRoot(literal, () => {
+  currentNs().intern("literal").bindRoot(literal, () => {
     return literal;
   }, (x) => {
     literal = x;
@@ -2489,29 +2737,29 @@ var create = (globals) => {
   });
   var stash42 = (args) => {
     if (keys63(args)) {
-      var __l8 = ["%object", "\"_stash\"", true];
+      var __l9 = ["%object", "\"_stash\"", true];
       var ____o18 = args;
-      var __k26 = undefined;
-      for (__k26 in ____o18) {
-        var __v20 = ____o18[__k26];
-        var __e46;
-        if (numeric63(__k26)) {
-          __e46 = parseInt(__k26);
+      var __k28 = undefined;
+      for (__k28 in ____o18) {
+        var __v20 = ____o18[__k28];
+        var __e52;
+        if (numeric63(__k28)) {
+          __e52 = parseInt(__k28);
         } else {
-          __e46 = __k26;
+          __e52 = __k28;
         }
-        var __k27 = __e46;
-        if (! number63(__k27)) {
-          add(__l8, literal(__k27));
-          add(__l8, __v20);
+        var __k29 = __e52;
+        if (! number63(__k29)) {
+          add(__l9, literal(__k29));
+          add(__l9, __v20);
         }
       }
-      return join(args, [__l8]);
+      return join(args, [__l9]);
     } else {
       return args;
     }
   };
-  _G._42ns42().intern("stash*").bindRoot(stash42, () => {
+  currentNs().intern("stash*").bindRoot(stash42, () => {
     return stash42;
   }, (x) => {
     stash42 = x;
@@ -2520,23 +2768,23 @@ var create = (globals) => {
   var bias = (k) => {
     return k;
   };
-  _G._42ns42().intern("bias").bindRoot(bias, () => {
+  currentNs().intern("bias").bindRoot(bias, () => {
     return bias;
   }, (x) => {
     bias = x;
     return bias;
   });
   var defaultAssignmentOp = "o";
-  _G._42ns42().intern("default-assignment-op").bindRoot(defaultAssignmentOp, () => {
+  currentNs().intern("default-assignment-op").bindRoot(defaultAssignmentOp, () => {
     return defaultAssignmentOp;
   }, (x) => {
     defaultAssignmentOp = x;
     return defaultAssignmentOp;
   });
   var defaultAssignment63 = (x) => {
-    return ! atom63(x) && hd(x) === defaultAssignmentOp;
+    return ! atom63(x) && eq(hd(x), defaultAssignmentOp);
   };
-  _G._42ns42().intern("default-assignment?").bindRoot(defaultAssignment63, () => {
+  currentNs().intern("default-assignment?").bindRoot(defaultAssignment63, () => {
     return defaultAssignment63;
   }, (x) => {
     defaultAssignment63 = x;
@@ -2550,42 +2798,42 @@ var create = (globals) => {
       if (defaultAssignment63(lh)) {
         return bind(lh[1], ["if", ["is?", rh], rh, lh[2]]);
       } else {
-        var __id41 = unique("id");
-        var __bs5 = [__id41, rh];
+        var __id43 = unique("id");
+        var __bs5 = [__id43, rh];
         var ____o19 = lh;
-        var __k28 = undefined;
-        for (__k28 in ____o19) {
-          var __v21 = ____o19[__k28];
-          var __e47;
-          if (numeric63(__k28)) {
-            __e47 = parseInt(__k28);
+        var __k30 = undefined;
+        for (__k30 in ____o19) {
+          var __v21 = ____o19[__k30];
+          var __e53;
+          if (numeric63(__k30)) {
+            __e53 = parseInt(__k30);
           } else {
-            __e47 = __k28;
+            __e53 = __k30;
           }
-          var __k29 = __e47;
-          var __e48;
-          if (__k29 === "rest") {
-            __e48 = ["cut", __id41, _35(lh)];
+          var __k31 = __e53;
+          var __e54;
+          if (eq(__k31, "rest")) {
+            __e54 = ["cut", __id43, _35(lh)];
           } else {
-            __e48 = [__id41, ["brackets", ["quote", __k29]]];
+            __e54 = [__id43, ["brackets", ["quote", __k31]]];
           }
-          var __x31 = __e48;
-          if (is63(__k29)) {
-            var __e49;
+          var __x33 = __e54;
+          if (is63(__k31)) {
+            var __e55;
             if (__v21 === true) {
-              __e49 = __k29;
+              __e55 = __k31;
             } else {
-              __e49 = __v21;
+              __e55 = __v21;
             }
-            var __k30 = __e49;
-            __bs5 = join(__bs5, bind(__k30, __x31));
+            var __k32 = __e55;
+            __bs5 = join(__bs5, bind(__k32, __x33));
           }
         }
         return __bs5;
       }
     }
   };
-  _G._42ns42().intern("bind").bindRoot(bind, () => {
+  currentNs().intern("bind").bindRoot(bind, () => {
     return bind;
   }, (x) => {
     bind = x;
@@ -2602,43 +2850,43 @@ var create = (globals) => {
       return [__args12, join(["let", [args, rest(args)]], body)];
     } else {
       var __bs6 = [];
-      var __r431 = unique("r");
+      var __r471 = unique("r");
       var ____o20 = args;
-      var __k31 = undefined;
-      for (__k31 in ____o20) {
-        var __v22 = ____o20[__k31];
-        var __e50;
-        if (numeric63(__k31)) {
-          __e50 = parseInt(__k31);
+      var __k33 = undefined;
+      for (__k33 in ____o20) {
+        var __v22 = ____o20[__k33];
+        var __e56;
+        if (numeric63(__k33)) {
+          __e56 = parseInt(__k33);
         } else {
-          __e50 = __k31;
+          __e56 = __k33;
         }
-        var __k32 = __e50;
-        if (number63(__k32)) {
+        var __k34 = __e56;
+        if (number63(__k34)) {
           if (atom63(__v22)) {
             add(__args12, __v22);
           } else {
-            var __x32 = unique("x");
-            add(__args12, __x32);
-            __bs6 = join(__bs6, [__v22, __x32]);
+            var __x34 = unique("x");
+            add(__args12, __x34);
+            __bs6 = join(__bs6, [__v22, __x34]);
           }
         }
       }
       if (keys63(args)) {
-        __bs6 = join(__bs6, [__r431, rest(__r431)]);
+        __bs6 = join(__bs6, [__r471, rest(__r471)]);
         var __n28 = _35(__args12);
         var __i36 = 0;
         while (__i36 < __n28) {
           var __v23 = __args12[__i36];
-          __bs6 = join(__bs6, [__v23, ["destash!", __v23, __r431]]);
+          __bs6 = join(__bs6, [__v23, ["destash!", __v23, __r471]]);
           __i36 = __i36 + 1;
         }
-        __bs6 = join(__bs6, [keys(args), __r431]);
+        __bs6 = join(__bs6, [keys(args), __r471]);
       }
       return [__args12, join(["let", __bs6], body)];
     }
   };
-  _G._42ns42().intern("bind*").bindRoot(bind42, () => {
+  currentNs().intern("bind*").bindRoot(bind42, () => {
     return bind42;
   }, (x) => {
     bind42 = x;
@@ -2648,7 +2896,7 @@ var create = (globals) => {
   var quoting63 = (depth) => {
     return number63(depth);
   };
-  _G._42ns42().intern("quoting?").bindRoot(quoting63, () => {
+  currentNs().intern("quoting?").bindRoot(quoting63, () => {
     return quoting63;
   }, (x) => {
     quoting63 = x;
@@ -2657,7 +2905,7 @@ var create = (globals) => {
   var quasiquoting63 = (depth) => {
     return quoting63(depth) && depth > 0;
   };
-  _G._42ns42().intern("quasiquoting?").bindRoot(quasiquoting63, () => {
+  currentNs().intern("quasiquoting?").bindRoot(quasiquoting63, () => {
     return quasiquoting63;
   }, (x) => {
     quasiquoting63 = x;
@@ -2666,118 +2914,118 @@ var create = (globals) => {
   var canUnquote63 = (depth) => {
     return quoting63(depth) && depth === 1;
   };
-  _G._42ns42().intern("can-unquote?").bindRoot(canUnquote63, () => {
+  currentNs().intern("can-unquote?").bindRoot(canUnquote63, () => {
     return canUnquote63;
   }, (x) => {
     canUnquote63 = x;
     return canUnquote63;
   });
   var quasisplice63 = (x, depth) => {
-    return canUnquote63(depth) && ! atom63(x) && hd(x) === "unquote-splicing";
+    return canUnquote63(depth) && ! atom63(x) && eq(hd(x), "unquote-splicing");
   };
-  _G._42ns42().intern("quasisplice?").bindRoot(quasisplice63, () => {
+  currentNs().intern("quasisplice?").bindRoot(quasisplice63, () => {
     return quasisplice63;
   }, (x) => {
     quasisplice63 = x;
     return quasisplice63;
   });
-  var expandLocal = (__x33) => {
-    var ____id42 = __x33;
-    var __x34 = ____id42[0];
-    var __name8 = ____id42[1];
-    var __value = ____id42[2];
-    setenv(__name8, {["_stash"]: true, ["variable"]: true});
-    return ["%local", __name8, macroexpand(__value)];
+  var expandLocal = (__x35) => {
+    var ____id44 = __x35;
+    var __x36 = ____id44[0];
+    var __name9 = ____id44[1];
+    var __value = ____id44[2];
+    setenv(__name9, {["_stash"]: true, ["variable"]: true});
+    return [__x36, __name9, macroexpand(__value)];
   };
-  _G._42ns42().intern("expand-local").bindRoot(expandLocal, () => {
+  currentNs().intern("expand-local").bindRoot(expandLocal, () => {
     return expandLocal;
   }, (x) => {
     expandLocal = x;
     return expandLocal;
   });
-  var expandFunction = (__x35) => {
-    var ____id43 = __x35;
-    var __x36 = ____id43[0];
-    var __args121 = ____id43[1];
-    var __body28 = cut(____id43, 2);
+  var expandFunction = (__x37) => {
+    var ____id45 = __x37;
+    var __x38 = ____id45[0];
+    var __args111 = ____id45[1];
+    var __body28 = cut(____id45, 2);
     add(_G.environment, {});
-    var ____o21 = __args121;
+    var ____o21 = __args111;
     var ____i37 = undefined;
     for (____i37 in ____o21) {
-      var ____x37 = ____o21[____i37];
-      var __e51;
+      var ____x39 = ____o21[____i37];
+      var __e57;
       if (numeric63(____i37)) {
-        __e51 = parseInt(____i37);
+        __e57 = parseInt(____i37);
       } else {
-        __e51 = ____i37;
+        __e57 = ____i37;
       }
-      var ____i371 = __e51;
-      if (defaultAssignment63(____x37)) {
-        setenv(____x37[1], {["_stash"]: true, ["variable"]: true});
+      var ____i371 = __e57;
+      if (defaultAssignment63(____x39)) {
+        setenv(____x39[1], {["_stash"]: true, ["variable"]: true});
       } else {
-        setenv(____x37, {["_stash"]: true, ["variable"]: true});
+        setenv(____x39, {["_stash"]: true, ["variable"]: true});
       }
     }
-    var ____x38 = join(["%function", __args121], macroexpand(__body28));
+    var ____x40 = join([__x38, __args111], macroexpand(__body28));
     drop(_G.environment);
-    return ____x38;
+    return ____x40;
   };
-  _G._42ns42().intern("expand-function").bindRoot(expandFunction, () => {
+  currentNs().intern("expand-function").bindRoot(expandFunction, () => {
     return expandFunction;
   }, (x) => {
     expandFunction = x;
     return expandFunction;
   });
-  var expandTable = (__x39) => {
-    var ____id44 = __x39;
-    var __x40 = ____id44[0];
-    var __args13 = cut(____id44, 1);
-    var __expr2 = join([__x40], keys(__args13));
-    var ____x41 = __args13;
+  var expandTable = (__x41) => {
+    var ____id46 = __x41;
+    var __x42 = ____id46[0];
+    var __args121 = cut(____id46, 1);
+    var __expr2 = join([__x42], keys(__args121));
+    var ____x43 = __args121;
     var ____i38 = 0;
-    while (____i38 < _35(____x41)) {
-      var __x42 = ____x41[____i38];
-      if (atom63(__x42)) {
-        add(__expr2, [__x42, macroexpand(__x42)]);
+    while (____i38 < _35(____x43)) {
+      var __x44 = ____x43[____i38];
+      if (atom63(__x44)) {
+        add(__expr2, [__x44, macroexpand(__x44)]);
       } else {
-        if (_35(__x42) <= 2) {
-          var ____id45 = __x42;
-          var __name9 = ____id45[0];
-          var __v24 = ____id45[1];
-          add(__expr2, [macroexpand(__name9), macroexpand(__v24)]);
+        if (_35(__x44) <= 2) {
+          var ____id47 = __x44;
+          var __name10 = ____id47[0];
+          var __v24 = ____id47[1];
+          add(__expr2, [macroexpand(__name10), macroexpand(__v24)]);
         } else {
-          var ____id46 = __x42;
-          var __prefix = ____id46[0];
-          var __name10 = ____id46[1];
-          var __args14 = ____id46[2];
-          var __body29 = cut(____id46, 3);
+          var ____id48 = __x44;
+          var __prefix = ____id48[0];
+          var __name11 = ____id48[1];
+          var __args13 = ____id48[2];
+          var __body29 = cut(____id48, 3);
           if (some63(__body29)) {
-            var ____id47 = bind42(__args14, __body29);
-            var __args131 = ____id47[0];
-            var __body111 = ____id47[1];
+            var ____id49 = bind42(__args13, __body29);
+            var __args131 = ____id49[0];
+            var __body111 = ____id49[1];
             add(_G.environment, {});
             var ____o22 = __args131;
             var ____i39 = undefined;
             for (____i39 in ____o22) {
-              var ____x43 = ____o22[____i39];
-              var __e52;
+              var ____x45 = ____o22[____i39];
+              var __e58;
               if (numeric63(____i39)) {
-                __e52 = parseInt(____i39);
+                __e58 = parseInt(____i39);
               } else {
-                __e52 = ____i39;
+                __e58 = ____i39;
               }
-              var ____i391 = __e52;
-              if (defaultAssignment63(____x43)) {
-                setenv(____x43[1], {["_stash"]: true, ["variable"]: true});
+              var ____i391 = __e58;
+              if (defaultAssignment63(____x45)) {
+                setenv(____x45[1], {["_stash"]: true, ["variable"]: true});
               } else {
-                setenv(____x43, {["_stash"]: true, ["variable"]: true});
+                setenv(____x45, {["_stash"]: true, ["variable"]: true});
               }
             }
-            var ____x44 = add(__expr2, [__prefix, macroexpand(__name10), __args131, macroexpand(__body111)]);
+            var ____x46 = add(__expr2, [__prefix, macroexpand(__name11), __args131, macroexpand(__body111)]);
             drop(_G.environment);
-            ____x44;
+            ____x46;
           } else {
-            add(__expr2, [__prefix, macroexpand(__name10), macroexpand(__args14)]);
+            add(__expr2, [__prefix, macroexpand(__name11), macroexpand(__args13)]);
           }
         }
       }
@@ -2785,98 +3033,98 @@ var create = (globals) => {
     }
     return __expr2;
   };
-  _G._42ns42().intern("expand-table").bindRoot(expandTable, () => {
+  currentNs().intern("expand-table").bindRoot(expandTable, () => {
     return expandTable;
   }, (x) => {
     expandTable = x;
     return expandTable;
   });
-  var expandClass = (__x45) => {
-    var ____id48 = __x45;
-    var __x46 = ____id48[0];
-    var __name11 = ____id48[1];
-    var __body30 = cut(____id48, 2);
-    return join([__x46, __name11], tl(expandTable(join(["%table"], __body30))));
+  var expandClass = (__x47) => {
+    var ____id50 = __x47;
+    var __x48 = ____id50[0];
+    var __name12 = ____id50[1];
+    var __body30 = cut(____id50, 2);
+    return join([__x48, __name12], tl(expandTable(join(["%table"], __body30))));
   };
-  _G._42ns42().intern("expand-class").bindRoot(expandClass, () => {
+  currentNs().intern("expand-class").bindRoot(expandClass, () => {
     return expandClass;
   }, (x) => {
     expandClass = x;
     return expandClass;
   });
-  var expandConditionCase = (__x47) => {
-    var ____id49 = __x47;
-    var __x48 = ____id49[0];
-    var ___var1 = ____id49[1];
-    var __form1 = ____id49[2];
-    var __clauses1 = cut(____id49, 3);
-    return join(["%condition-case", ___var1, macroexpand(__form1)], map((__x49) => {
-      var ____id50 = __x49;
-      var __which = ____id50[0];
-      var __body31 = cut(____id50, 1);
-      if (__which === "finally") {
+  var expandConditionCase = (__x49) => {
+    var ____id51 = __x49;
+    var __x50 = ____id51[0];
+    var ___var1 = ____id51[1];
+    var __form1 = ____id51[2];
+    var __clauses1 = cut(____id51, 3);
+    return join([__x50, ___var1, macroexpand(__form1)], map((__x51) => {
+      var ____id52 = __x51;
+      var __which = ____id52[0];
+      var __body31 = cut(____id52, 1);
+      if (eq(__which, "finally")) {
         return join([__which], map(macroexpand, __body31));
       } else {
         add(_G.environment, {});
         var ____o23 = [___var1];
         var ____i40 = undefined;
         for (____i40 in ____o23) {
-          var ____x50 = ____o23[____i40];
-          var __e53;
+          var ____x52 = ____o23[____i40];
+          var __e59;
           if (numeric63(____i40)) {
-            __e53 = parseInt(____i40);
+            __e59 = parseInt(____i40);
           } else {
-            __e53 = ____i40;
+            __e59 = ____i40;
           }
-          var ____i401 = __e53;
-          if (defaultAssignment63(____x50)) {
-            setenv(____x50[1], {["_stash"]: true, ["variable"]: true});
+          var ____i401 = __e59;
+          if (defaultAssignment63(____x52)) {
+            setenv(____x52[1], {["_stash"]: true, ["variable"]: true});
           } else {
-            setenv(____x50, {["_stash"]: true, ["variable"]: true});
+            setenv(____x52, {["_stash"]: true, ["variable"]: true});
           }
         }
-        var ____x51 = join([__which], map(macroexpand, __body31));
+        var ____x53 = join([__which], map(macroexpand, __body31));
         drop(_G.environment);
-        return ____x51;
+        return ____x53;
       }
     }, __clauses1));
   };
-  _G._42ns42().intern("expand-condition-case").bindRoot(expandConditionCase, () => {
+  currentNs().intern("expand-condition-case").bindRoot(expandConditionCase, () => {
     return expandConditionCase;
   }, (x) => {
     expandConditionCase = x;
     return expandConditionCase;
   });
   _G.expandConditionCase = expandConditionCase;
-  var expandDefinition = (__x52) => {
-    var ____id51 = __x52;
-    var __x53 = ____id51[0];
-    var __name12 = ____id51[1];
-    var __args15 = ____id51[2];
-    var __body32 = cut(____id51, 3);
+  var expandDefinition = (__x54) => {
+    var ____id53 = __x54;
+    var __x55 = ____id53[0];
+    var __name13 = ____id53[1];
+    var __args14 = ____id53[2];
+    var __body32 = cut(____id53, 3);
     add(_G.environment, {});
-    var ____o24 = __args15;
+    var ____o24 = __args14;
     var ____i41 = undefined;
     for (____i41 in ____o24) {
-      var ____x54 = ____o24[____i41];
-      var __e54;
+      var ____x56 = ____o24[____i41];
+      var __e60;
       if (numeric63(____i41)) {
-        __e54 = parseInt(____i41);
+        __e60 = parseInt(____i41);
       } else {
-        __e54 = ____i41;
+        __e60 = ____i41;
       }
-      var ____i411 = __e54;
-      if (defaultAssignment63(____x54)) {
-        setenv(____x54[1], {["_stash"]: true, ["variable"]: true});
+      var ____i411 = __e60;
+      if (defaultAssignment63(____x56)) {
+        setenv(____x56[1], {["_stash"]: true, ["variable"]: true});
       } else {
-        setenv(____x54, {["_stash"]: true, ["variable"]: true});
+        setenv(____x56, {["_stash"]: true, ["variable"]: true});
       }
     }
-    var ____x55 = join([__x53, __name12, __args15], macroexpand(__body32));
+    var ____x57 = join([__x55, __name13, __args14], macroexpand(__body32));
     drop(_G.environment);
-    return ____x55;
+    return ____x57;
   };
-  _G._42ns42().intern("expand-definition").bindRoot(expandDefinition, () => {
+  currentNs().intern("expand-definition").bindRoot(expandDefinition, () => {
     return expandDefinition;
   }, (x) => {
     expandDefinition = x;
@@ -2885,55 +3133,55 @@ var create = (globals) => {
   var expandMacro = (form) => {
     return macroexpand(expand1(form));
   };
-  _G._42ns42().intern("expand-macro").bindRoot(expandMacro, () => {
+  currentNs().intern("expand-macro").bindRoot(expandMacro, () => {
     return expandMacro;
   }, (x) => {
     expandMacro = x;
     return expandMacro;
   });
-  var expand1 = (__x56) => {
-    var ____id52 = __x56;
-    var __name13 = ____id52[0];
-    var __body33 = cut(____id52, 1);
-    return apply(macroFunction(__name13), __body33);
+  var expand1 = (__x58) => {
+    var ____id54 = __x58;
+    var __name14 = ____id54[0];
+    var __body33 = cut(____id54, 1);
+    return _G.apply(macroFunction(__name14), __body33);
   };
-  _G._42ns42().intern("expand1").bindRoot(expand1, () => {
+  currentNs().intern("expand1").bindRoot(expand1, () => {
     return expand1;
   }, (x) => {
     expand1 = x;
     return expand1;
   });
   _G.expand1 = expand1;
-  var macroexpand = (form) => {
+  var macroexpand1 = (form) => {
     if (symbolMacro63(form)) {
       return macroexpand(symbolExpansion(form));
     } else {
       if (atom63(form)) {
         return form;
       } else {
-        var __x57 = hd(form);
-        if (__x57 === "%local") {
+        var __x59 = hd(form);
+        if (eq(__x59, "%local")) {
           return expandLocal(form);
         } else {
-          if (__x57 === "%function") {
+          if (eq(__x59, "%function")) {
             return expandFunction(form);
           } else {
-            if (__x57 === "%table") {
+            if (eq(__x59, "%table")) {
               return expandTable(form);
             } else {
-              if (__x57 === "%class") {
+              if (eq(__x59, "%class")) {
                 return expandClass(form);
               } else {
-                if (__x57 === "%condition-case") {
+                if (eq(__x59, "%condition-case")) {
                   return expandConditionCase(form);
                 } else {
-                  if (__x57 === "%global-function") {
+                  if (eq(__x59, "%global-function")) {
                     return expandDefinition(form);
                   } else {
-                    if (__x57 === "%local-function") {
+                    if (eq(__x59, "%local-function")) {
                       return expandDefinition(form);
                     } else {
-                      if (macro63(__x57)) {
+                      if (macro63(__x59)) {
                         return expandMacro(form);
                       } else {
                         return map(macroexpand, form);
@@ -2948,7 +3196,21 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("macroexpand").bindRoot(macroexpand, () => {
+  currentNs().intern("macroexpand-1").bindRoot(macroexpand1, () => {
+    return macroexpand1;
+  }, (x) => {
+    macroexpand1 = x;
+    return macroexpand1;
+  });
+  _G.macroexpand1 = macroexpand1;
+  var macroexpand = (form) => {
+    var __l10 = macroexpand1(form);
+    if (meta63(form)) {
+      meta33(__l10, meta(form));
+    }
+    return __l10;
+  };
+  currentNs().intern("macroexpand").bindRoot(macroexpand, () => {
     return macroexpand;
   }, (x) => {
     macroexpand = x;
@@ -2958,42 +3220,42 @@ var create = (globals) => {
   var quasiquoteList = (form, depth) => {
     var __xs13 = [["list"]];
     var ____o25 = form;
-    var __k33 = undefined;
-    for (__k33 in ____o25) {
-      var __v25 = ____o25[__k33];
-      var __e55;
-      if (numeric63(__k33)) {
-        __e55 = parseInt(__k33);
+    var __k35 = undefined;
+    for (__k35 in ____o25) {
+      var __v25 = ____o25[__k35];
+      var __e61;
+      if (numeric63(__k35)) {
+        __e61 = parseInt(__k35);
       } else {
-        __e55 = __k33;
+        __e61 = __k35;
       }
-      var __k34 = __e55;
-      if (! number63(__k34)) {
-        var __e56;
+      var __k36 = __e61;
+      if (! number63(__k36)) {
+        var __e62;
         if (quasisplice63(__v25, depth)) {
-          __e56 = quasiexpand(__v25[1]);
+          __e62 = quasiexpand(__v25[1]);
         } else {
-          __e56 = quasiexpand(__v25, depth);
+          __e62 = quasiexpand(__v25, depth);
         }
-        var __v26 = __e56;
-        last(__xs13)[__k34] = __v26;
+        var __v26 = __e62;
+        last(__xs13)[__k36] = __v26;
       }
     }
-    var ____x58 = form;
+    var ____x60 = form;
     var ____i43 = 0;
-    while (____i43 < _35(____x58)) {
-      var __x59 = ____x58[____i43];
-      if (quasisplice63(__x59, depth)) {
-        var __x60 = quasiexpand(__x59[1]);
-        add(__xs13, __x60);
+    while (____i43 < _35(____x60)) {
+      var __x61 = ____x60[____i43];
+      if (quasisplice63(__x61, depth)) {
+        var __x62 = quasiexpand(__x61[1]);
+        add(__xs13, __x62);
         add(__xs13, ["list"]);
       } else {
-        add(last(__xs13), quasiexpand(__x59, depth));
+        add(last(__xs13), quasiexpand(__x61, depth));
       }
       ____i43 = ____i43 + 1;
     }
     var __pruned = keep((x) => {
-      return _35(x) > 1 || !( hd(x) === "list") || keys63(x);
+      return _35(x) > 1 || ! eq(hd(x), "list") || keys63(x);
     }, __xs13);
     if (one63(__pruned)) {
       return hd(__pruned);
@@ -3001,24 +3263,71 @@ var create = (globals) => {
       return join(["join"], __pruned);
     }
   };
-  _G._42ns42().intern("quasiquote-list").bindRoot(quasiquoteList, () => {
+  currentNs().intern("quasiquote-list").bindRoot(quasiquoteList, () => {
     return quasiquoteList;
   }, (x) => {
     quasiquoteList = x;
     return quasiquoteList;
   });
+  var sym = (ns, name) => {
+    if (is63(search(name, "."))) {
+      return name;
+    } else {
+      if (ns) {
+        return ns + "/" + name;
+      } else {
+        return name;
+      }
+    }
+  };
+  currentNs().intern("sym").bindRoot(sym, () => {
+    return sym;
+  }, (x) => {
+    sym = x;
+    return sym;
+  });
+  _G.sym = sym;
+  var resolve = (form, __x63) => {
+    var __e63;
+    if (is63(__x63)) {
+      __e63 = __x63;
+    } else {
+      __e63 = _G.nsPrefix;
+    }
+    var __pre = __e63;
+    if (stringLiteral63(form)) {
+      return form;
+    } else {
+      if (accessor63(form)) {
+        return form;
+      } else {
+        if (string63(form)) {
+          return sym(__pre, form);
+        } else {
+          return form;
+        }
+      }
+    }
+  };
+  currentNs().intern("resolve").bindRoot(resolve, () => {
+    return resolve;
+  }, (x) => {
+    resolve = x;
+    return resolve;
+  });
+  _G.resolve = resolve;
   var quasiexpand = (form, depth) => {
     if (quasiquoting63(depth)) {
       if (atom63(form)) {
         return ["quote", form];
       } else {
-        if (canUnquote63(depth) && hd(form) === "unquote") {
+        if (canUnquote63(depth) && eq(hd(form), "unquote")) {
           return quasiexpand(form[1]);
         } else {
-          if (hd(form) === "unquote" || hd(form) === "unquote-splicing") {
+          if (eq(hd(form), "unquote") || eq(hd(form), "unquote-splicing")) {
             return quasiquoteList(form, depth - 1);
           } else {
-            if (hd(form) === "quasiquote") {
+            if (eq(hd(form), "quasiquote")) {
               return quasiquoteList(form, depth + 1);
             } else {
               return quasiquoteList(form, depth);
@@ -3030,10 +3339,10 @@ var create = (globals) => {
       if (atom63(form)) {
         return form;
       } else {
-        if (hd(form) === "quote") {
+        if (eq(hd(form), "quote")) {
           return form;
         } else {
-          if (hd(form) === "quasiquote") {
+          if (eq(hd(form), "quasiquote")) {
             return quasiexpand(form[1], 1);
           } else {
             return map((x) => {
@@ -3044,18 +3353,18 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("quasiexpand").bindRoot(quasiexpand, () => {
+  currentNs().intern("quasiexpand").bindRoot(quasiexpand, () => {
     return quasiexpand;
   }, (x) => {
     quasiexpand = x;
     return quasiexpand;
   });
   _G.quasiexpand = quasiexpand;
-  var expandIf = (__x61) => {
-    var ____id53 = __x61;
-    var __a5 = ____id53[0];
-    var __b4 = ____id53[1];
-    var __c11 = cut(____id53, 2);
+  var expandIf = (__x64) => {
+    var ____id55 = __x64;
+    var __a5 = ____id55[0];
+    var __b4 = ____id55[1];
+    var __c11 = cut(____id55, 2);
     if (is63(__b4)) {
       return [join(["%if", __a5, __b4], expandIf(__c11))];
     } else {
@@ -3064,7 +3373,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("expand-if").bindRoot(expandIf, () => {
+  currentNs().intern("expand-if").bindRoot(expandIf, () => {
     return expandIf;
   }, (x) => {
     expandIf = x;
@@ -3072,7 +3381,7 @@ var create = (globals) => {
   });
   _G.expandIf = expandIf;
   indentLevel = 0;
-  _G._42ns42().intern("indent-level").bindRoot(indentLevel, () => {
+  currentNs().intern("indent-level").bindRoot(indentLevel, () => {
     return indentLevel;
   }, (x) => {
     indentLevel = x;
@@ -3088,7 +3397,7 @@ var create = (globals) => {
     }
     return __s2;
   };
-  _G._42ns42().intern("indentation").bindRoot(indentation, () => {
+  currentNs().intern("indentation").bindRoot(indentation, () => {
     return indentation;
   }, (x) => {
     indentation = x;
@@ -3096,7 +3405,7 @@ var create = (globals) => {
   });
   _G.indentation = indentation;
   var reserved = {["="]: true, ["=="]: true, ["+"]: true, ["-"]: true, ["%"]: true, ["*"]: true, ["/"]: true, ["<"]: true, [">"]: true, ["<="]: true, [">="]: true, ["break"]: true, ["case"]: true, ["catch"]: true, ["class"]: true, ["const"]: true, ["continue"]: true, ["debugger"]: true, ["default"]: true, ["delete"]: true, ["do"]: true, ["else"]: true, ["eval"]: true, ["export"]: true, ["extends"]: true, ["finally"]: true, ["for"]: true, ["function"]: true, ["if"]: true, ["import"]: true, ["in"]: true, ["instanceof"]: true, ["new"]: true, ["return"]: true, ["switch"]: true, ["throw"]: true, ["try"]: true, ["typeof"]: true, ["var"]: true, ["void"]: true, ["while"]: true, ["with"]: true};
-  _G._42ns42().intern("reserved").bindRoot(reserved, () => {
+  currentNs().intern("reserved").bindRoot(reserved, () => {
     return reserved;
   }, (x) => {
     reserved = x;
@@ -3105,7 +3414,7 @@ var create = (globals) => {
   var reserved63 = (x) => {
     return has63(reserved, x);
   };
-  _G._42ns42().intern("reserved?").bindRoot(reserved63, () => {
+  currentNs().intern("reserved?").bindRoot(reserved63, () => {
     return reserved63;
   }, (x) => {
     reserved63 = x;
@@ -3115,16 +3424,16 @@ var create = (globals) => {
   var validCode63 = (n) => {
     return numberCode63(n) || n >= 65 && n <= 90 || n >= 97 && n <= 122 || n === 95;
   };
-  _G._42ns42().intern("valid-code?").bindRoot(validCode63, () => {
+  currentNs().intern("valid-code?").bindRoot(validCode63, () => {
     return validCode63;
   }, (x) => {
     validCode63 = x;
     return validCode63;
   });
   var accessor63 = (x) => {
-    return string63(x) && _35(x) > 1 && code(x, 0) === 46 && !( code(x, 1) === 46) || obj63(x) && hd(x) === "%brackets";
+    return string63(x) && _35(x) > 1 && code(x, 0) === 46 && !( code(x, 1) === 46) || sym63(x) && accessor63(str(x)) || obj63(x) && eq(hd(x), "%brackets");
   };
-  _G._42ns42().intern("accessor?").bindRoot(accessor63, () => {
+  currentNs().intern("accessor?").bindRoot(accessor63, () => {
     return accessor63;
   }, (x) => {
     accessor63 = x;
@@ -3132,7 +3441,7 @@ var create = (globals) => {
   });
   _G.accessor63 = accessor63;
   camelCaseRegex = new RegExp("(?<=[a-z])[-](\\w|$)", "g");
-  _G._42ns42().intern("camel-case-regex").bindRoot(camelCaseRegex, () => {
+  currentNs().intern("camel-case-regex").bindRoot(camelCaseRegex, () => {
     return camelCaseRegex;
   }, (x) => {
     camelCaseRegex = x;
@@ -3148,7 +3457,7 @@ var create = (globals) => {
       return name;
     }
   };
-  _G._42ns42().intern("camel-case").bindRoot(camelCase, () => {
+  currentNs().intern("camel-case").bindRoot(camelCase, () => {
     return camelCase;
   }, (x) => {
     camelCase = x;
@@ -3156,90 +3465,146 @@ var create = (globals) => {
   });
   _G.camelCase = camelCase;
   var fqn63 = (x) => {
-    var __id98 = string63(x) && ! stringLiteral63(x);
-    var __e57;
-    if (__id98) {
-      var __i45 = search(x, "/");
-      __e57 = is63(__i45) && !( __i45 === edge(x));
+    if (sym63(x)) {
+      return x.fqn63();
     } else {
-      __e57 = __id98;
+      var __id100 = string63(x) && ! stringLiteral63(x);
+      var __e64;
+      if (__id100) {
+        var __i45 = search(x, "/");
+        __e64 = is63(__i45) && !( __i45 === edge(x));
+      } else {
+        __e64 = __id100;
+      }
+      return __e64;
     }
-    return __e57;
   };
-  _G._42ns42().intern("fqn?").bindRoot(fqn63, () => {
+  currentNs().intern("fqn?").bindRoot(fqn63, () => {
     return fqn63;
   }, (x) => {
     fqn63 = x;
     return fqn63;
   });
+  _G.fqn63 = fqn63;
   var namespace = (x) => {
-    if (fqn63(x)) {
-      return clip(x, 0, search(x, "/"));
+    if (nil63(x)) {
+      return x;
+    } else {
+      if (has63(x).ns) {
+        return x.ns;
+      } else {
+        if (fqn63(x)) {
+          return clip(x, 0, search(x, "/"));
+        }
+      }
     }
   };
-  _G._42ns42().intern("namespace").bindRoot(namespace, () => {
+  currentNs().intern("namespace").bindRoot(namespace, () => {
     return namespace;
   }, (x) => {
     namespace = x;
     return namespace;
   });
+  _G.namespace = namespace;
   var name = (x) => {
-    if (fqn63(x)) {
-      return clip(x, search(x, "/") + 1);
-    } else {
+    if (nil63(x)) {
       return x;
+    } else {
+      if (has63(x, "name")) {
+        return x.name;
+      } else {
+        if (fqn63(x)) {
+          return clip(x, search(x, "/") + 1);
+        } else {
+          return x;
+        }
+      }
     }
   };
-  _G._42ns42().intern("name").bindRoot(name, () => {
+  currentNs().intern("name").bindRoot(name, () => {
     return name;
   }, (x) => {
     name = x;
     return name;
   });
-  var fqn = (id, x) => {
-    return ["_G", ".Namespace", ".find", escape(namespace(id)), ".intern", escape(name(id)), [".deref", x]];
+  _G.name = name;
+  var eq = (x, y) => {
+    if (x && function63(x.eq)) {
+      return x.eq(y);
+    } else {
+      if (fqn63(y)) {
+        return x === y;
+      } else {
+        if (stringLiteral63(y)) {
+          return x === y;
+        } else {
+          if (string63(y)) {
+            return name(x) === y;
+          } else {
+            return x === y;
+          }
+        }
+      }
+    }
   };
-  _G._42ns42().intern("fqn").bindRoot(fqn, () => {
+  currentNs().intern("eq").bindRoot(eq, () => {
+    return eq;
+  }, (x) => {
+    eq = x;
+    return eq;
+  });
+  _G.eq = eq;
+  var fqn = (id, x) => {
+    if (eq(namespace(id), "js")) {
+      return name(id);
+    } else {
+      return ["_G", ".Namespace", ".find", escape(namespace(id)), ".intern", escape(name(id)), [".deref", x]];
+    }
+  };
+  currentNs().intern("fqn").bindRoot(fqn, () => {
     return fqn;
   }, (x) => {
     fqn = x;
     return fqn;
   });
   var id = (id, raw63) => {
+    if (sym63(id)) {
+      id = str(id);
+    }
     if (fqn63(id)) {
       return "(" + compile(fqn(id)) + ")";
     } else {
-      var __id54 = camelCase(id);
-      var __e58;
-      if (! raw63 && numberCode63(code(__id54, 0))) {
-        __e58 = "_";
+      var __id56 = camelCase(id);
+      var __e65;
+      if (! raw63 && numberCode63(code(__id56, 0))) {
+        __e65 = "_";
       } else {
-        __e58 = "";
+        __e65 = "";
       }
-      var __id121 = __e58;
+      var __id121 = __e65;
       var __i46 = 0;
-      while (__i46 < _35(__id54)) {
-        var __c2 = char(__id54, __i46);
+      while (__i46 < _35(__id56)) {
+        var __c2 = char(__id56, __i46);
         var __n34 = code(__c2);
-        var __e59;
-        if (__c2 === "-" && !( __id54 === "-")) {
-          __e59 = "_";
+        var __e66;
+        if (__c2 === "-" && !( __id56 === "-")) {
+          __e66 = "_";
         } else {
-          var __e60;
+          var __e67;
           if (validCode63(__n34)) {
-            __e60 = __c2;
+            __e67 = __c2;
           } else {
-            var __e61;
+            var __e68;
             if (__i46 === 0) {
-              __e61 = "_" + __n34;
+              __e68 = "_" + __n34;
             } else {
-              __e61 = __n34;
+              __e68 = __n34;
             }
-            __e60 = __e61;
+            __e67 = __e68;
           }
-          __e59 = __e60;
+          __e66 = __e67;
         }
-        var __c12 = __e59;
+        var __c12 = __e66;
         __id121 = __id121 + __c12;
         __i46 = __i46 + 1;
       }
@@ -3250,16 +3615,20 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("id").bindRoot(id, () => {
+  currentNs().intern("id").bindRoot(id, () => {
     return id;
   }, (x) => {
     id = x;
     return id;
   });
   var validId63 = (x) => {
-    return some63(x) && x === id(x);
+    if (sym63(x)) {
+      return validId63(str(x));
+    } else {
+      return some63(x) && x === id(x);
+    }
   };
-  _G._42ns42().intern("valid-id?").bindRoot(validId63, () => {
+  currentNs().intern("valid-id?").bindRoot(validId63, () => {
     return validId63;
   }, (x) => {
     validId63 = x;
@@ -3268,21 +3637,24 @@ var create = (globals) => {
   _G.validId63 = validId63;
   var __names3 = {};
   var unique = (x) => {
+    if (sym63(x)) {
+      x = str(x);
+    }
     if (string63(x)) {
-      var __x62 = id(x);
-      if (__names3[__x62]) {
-        var __i47 = __names3[__x62];
-        __names3[__x62] = __names3[__x62] + 1;
-        return unique(__x62 + __i47);
+      var __x65 = id(x);
+      if (__names3[__x65]) {
+        var __i47 = __names3[__x65];
+        __names3[__x65] = __names3[__x65] + 1;
+        return unique(__x65 + __i47);
       } else {
-        __names3[__x62] = 1;
-        return "__" + __x62;
+        __names3[__x65] = 1;
+        return "__" + __x65;
       }
     } else {
       return x;
     }
   };
-  _G._42ns42().intern("unique").bindRoot(unique, () => {
+  currentNs().intern("unique").bindRoot(unique, () => {
     return unique;
   }, (x) => {
     unique = x;
@@ -3290,17 +3662,25 @@ var create = (globals) => {
   });
   _G.unique = unique;
   var key = (k) => {
+    if (sym63(k)) {
+      k = str(k);
+    }
     if (string63(k) && validId63(k)) {
       return k;
     } else {
-      if (stringLiteral63(k) || ! string63(k)) {
-        return "[" + compile(k) + "]";
+      var __k111 = compile(k);
+      if (string63(__k111) && char(__k111, 0) === "[") {
+        return __k111;
       } else {
-        return compile(k);
+        if (stringLiteral63(k) || ! string63(k)) {
+          return "[" + __k111 + "]";
+        } else {
+          return __k111;
+        }
       }
     }
   };
-  _G._42ns42().intern("key").bindRoot(key, () => {
+  currentNs().intern("key").bindRoot(key, () => {
     return key;
   }, (x) => {
     key = x;
@@ -3310,25 +3690,25 @@ var create = (globals) => {
   var mapo = (f, t) => {
     var __o26 = [];
     var ____o27 = t;
-    var __k35 = undefined;
-    for (__k35 in ____o27) {
-      var __v27 = ____o27[__k35];
-      var __e62;
-      if (numeric63(__k35)) {
-        __e62 = parseInt(__k35);
+    var __k37 = undefined;
+    for (__k37 in ____o27) {
+      var __v27 = ____o27[__k37];
+      var __e69;
+      if (numeric63(__k37)) {
+        __e69 = parseInt(__k37);
       } else {
-        __e62 = __k35;
+        __e69 = __k37;
       }
-      var __k36 = __e62;
-      var __x63 = f(__v27);
-      if (is63(__x63)) {
-        add(__o26, literal(__k36));
-        add(__o26, __x63);
+      var __k38 = __e69;
+      var __x66 = f(__v27);
+      if (is63(__x66)) {
+        add(__o26, literal(__k38));
+        add(__o26, __x66);
       }
     }
     return __o26;
   };
-  _G._42ns42().intern("mapo").bindRoot(mapo, () => {
+  currentNs().intern("mapo").bindRoot(mapo, () => {
     return mapo;
   }, (x) => {
     mapo = x;
@@ -3336,16 +3716,16 @@ var create = (globals) => {
   });
   _G.mapo = mapo;
   var infix = [{["not"]: {["js"]: "!"}}, {["*"]: true, ["/"]: true, ["%"]: true}, {["cat"]: {["js"]: "+"}}, {["+"]: true, ["-"]: true}, {["<"]: true, [">"]: true, ["<="]: true, [">="]: true}, {["="]: {["js"]: "==="}, ["=="]: {["js"]: "=="}}, {["and"]: {["js"]: "&&"}}, {["or"]: {["js"]: "||"}}];
-  _G._42ns42().intern("infix").bindRoot(infix, () => {
+  currentNs().intern("infix").bindRoot(infix, () => {
     return infix;
   }, (x) => {
     infix = x;
     return infix;
   });
   var unary63 = (form) => {
-    return two63(form) && in63(hd(form), ["not", "-"]);
+    return two63(form) && in63(name(hd(form)), ["not", "-"]);
   };
-  _G._42ns42().intern("unary?").bindRoot(unary63, () => {
+  currentNs().intern("unary?").bindRoot(unary63, () => {
     return unary63;
   }, (x) => {
     unary63 = x;
@@ -3354,7 +3734,7 @@ var create = (globals) => {
   var index = (k) => {
     return k;
   };
-  _G._42ns42().intern("index").bindRoot(index, () => {
+  currentNs().intern("index").bindRoot(index, () => {
     return index;
   }, (x) => {
     index = x;
@@ -3363,43 +3743,46 @@ var create = (globals) => {
   var precedence = (form) => {
     if (!( atom63(form) || unary63(form))) {
       var ____o28 = infix;
-      var __k37 = undefined;
-      for (__k37 in ____o28) {
-        var __v28 = ____o28[__k37];
-        var __e63;
-        if (numeric63(__k37)) {
-          __e63 = parseInt(__k37);
+      var __k39 = undefined;
+      for (__k39 in ____o28) {
+        var __v28 = ____o28[__k39];
+        var __e70;
+        if (numeric63(__k39)) {
+          __e70 = parseInt(__k39);
         } else {
-          __e63 = __k37;
+          __e70 = __k39;
         }
-        var __k38 = __e63;
-        var __x64 = hd(form);
-        if (__v28[__x64]) {
-          return index(__k38);
+        var __k40 = __e70;
+        var __x67 = hd(form);
+        if (__v28[__x67]) {
+          return index(__k40);
         }
       }
     }
     return 0;
   };
-  _G._42ns42().intern("precedence").bindRoot(precedence, () => {
+  currentNs().intern("precedence").bindRoot(precedence, () => {
     return precedence;
   }, (x) => {
     precedence = x;
     return precedence;
   });
   var getop = (op) => {
+    if (! string63(op)) {
+      op = str(op);
+    }
     return find((level) => {
-      var __x65 = level[op];
-      if (__x65 === true) {
+      var __x68 = level[op];
+      if (__x68 === true) {
         return op;
       } else {
-        if (is63(__x65)) {
-          return __x65.js;
+        if (is63(__x68)) {
+          return __x68.js;
         }
       }
     }, infix);
   };
-  _G._42ns42().intern("getop").bindRoot(getop, () => {
+  currentNs().intern("getop").bindRoot(getop, () => {
     return getop;
   }, (x) => {
     getop = x;
@@ -3408,7 +3791,7 @@ var create = (globals) => {
   var infix63 = (x) => {
     return is63(getop(x));
   };
-  _G._42ns42().intern("infix?").bindRoot(infix63, () => {
+  currentNs().intern("infix?").bindRoot(infix63, () => {
     return infix63;
   }, (x) => {
     infix63 = x;
@@ -3417,7 +3800,7 @@ var create = (globals) => {
   var infixOperator63 = (x) => {
     return obj63(x) && infix63(hd(x));
   };
-  _G._42ns42().intern("infix-operator?").bindRoot(infixOperator63, () => {
+  currentNs().intern("infix-operator?").bindRoot(infixOperator63, () => {
     return infixOperator63;
   }, (x) => {
     infixOperator63 = x;
@@ -3435,7 +3818,7 @@ var create = (globals) => {
       return x + compileArgs(args, call63);
     }
   };
-  _G._42ns42().intern("compile-next").bindRoot(compileNext, () => {
+  currentNs().intern("compile-next").bindRoot(compileNext, () => {
     return compileNext;
   }, (x) => {
     compileNext = x;
@@ -3448,28 +3831,28 @@ var create = (globals) => {
       return compileNext(compile(__a6), tl(args), call63);
     } else {
       if (obj63(__a6) && accessor63(hd(__a6))) {
-        var ____id55 = __a6;
-        var __x66 = ____id55[0];
-        var __ys = cut(____id55, 1);
-        var __s3 = compileNext(compile(__x66), __ys, true);
+        var ____id57 = __a6;
+        var __x69 = ____id57[0];
+        var __ys = cut(____id57, 1);
+        var __s3 = compileNext(compile(__x69), __ys, true);
         return compileNext(__s3, tl(args), call63);
       } else {
         var __s4 = "";
         var __c3 = "";
         var __i50 = 0;
         while (__i50 < _35(args)) {
-          var __x67 = args[__i50];
-          if (defaultAssignment63(__x67)) {
-            var ____id56 = __x67;
-            var ___1 = ____id56[0];
-            var __x111 = ____id56[1];
-            var __val1 = ____id56[2];
-            __s4 = __s4 + __c3 + compile(__x111) + " = " + compile(__val1);
+          var __x70 = args[__i50];
+          if (defaultAssignment63(__x70)) {
+            var ____id58 = __x70;
+            var ___1 = ____id58[0];
+            var __x111 = ____id58[1];
+            var __val2 = ____id58[2];
+            __s4 = __s4 + __c3 + compile(__x111) + " = " + compile(__val2);
           } else {
-            if (accessor63(__x67) || obj63(__x67) && accessor63(hd(__x67))) {
+            if (accessor63(__x70) || obj63(__x70) && accessor63(hd(__x70))) {
               return compileNext("(" + __s4 + ")", cut(args, __i50), call63);
             } else {
-              __s4 = __s4 + __c3 + compile(__x67);
+              __s4 = __s4 + __c3 + compile(__x70);
             }
           }
           __c3 = ", ";
@@ -3482,7 +3865,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("compile-args").bindRoot(compileArgs, () => {
+  currentNs().intern("compile-args").bindRoot(compileArgs, () => {
     return compileArgs;
   }, (x) => {
     compileArgs = x;
@@ -3494,30 +3877,33 @@ var create = (globals) => {
     var __i51 = 0;
     while (__i51 < _35(s)) {
       var __c4 = char(s, __i51);
-      var __e64;
+      var __e71;
       if (__c4 === "\n") {
-        __e64 = "\\n";
+        __e71 = "\\n";
       } else {
-        var __e65;
+        var __e72;
         if (__c4 === "\r") {
-          __e65 = "";
+          __e72 = "";
         } else {
-          __e65 = __c4;
+          __e72 = __c4;
         }
-        __e64 = __e65;
+        __e71 = __e72;
       }
-      __s12 = __s12 + __e64;
+      __s12 = __s12 + __e71;
       __i51 = __i51 + 1;
     }
     return __s12;
   };
-  _G._42ns42().intern("escape-newlines").bindRoot(escapeNewlines, () => {
+  currentNs().intern("escape-newlines").bindRoot(escapeNewlines, () => {
     return escapeNewlines;
   }, (x) => {
     escapeNewlines = x;
     return escapeNewlines;
   });
   var accessor = (x) => {
+    if (sym63(x)) {
+      x = str(x);
+    }
     var __prop1 = compileAtom(clip(x, 1), true);
     if (validId63(__prop1)) {
       return "." + __prop1;
@@ -3525,7 +3911,7 @@ var create = (globals) => {
       return "[" + escape(__prop1) + "]";
     }
   };
-  _G._42ns42().intern("accessor").bindRoot(accessor, () => {
+  currentNs().intern("accessor").bindRoot(accessor, () => {
     return accessor;
   }, (x) => {
     accessor = x;
@@ -3567,7 +3953,11 @@ var create = (globals) => {
                       if (number63(x)) {
                         return x + "";
                       } else {
-                        throw new Error("Cannot compile atom: " + str(x));
+                        if (x.compile) {
+                          return x.compile(raw63);
+                        } else {
+                          throw new Error("Cannot compile atom: " + str(x));
+                        }
                       }
                     }
                   }
@@ -3579,7 +3969,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("compile-atom").bindRoot(compileAtom, () => {
+  currentNs().intern("compile-atom").bindRoot(compileAtom, () => {
     return compileAtom;
   }, (x) => {
     compileAtom = x;
@@ -3592,33 +3982,33 @@ var create = (globals) => {
       return ";\n";
     }
   };
-  _G._42ns42().intern("terminator").bindRoot(terminator, () => {
+  currentNs().intern("terminator").bindRoot(terminator, () => {
     return terminator;
   }, (x) => {
     terminator = x;
     return terminator;
   });
   var compileSpecial = (form, stmt63) => {
-    var ____id57 = form;
-    var __x68 = ____id57[0];
-    var __args16 = cut(____id57, 1);
-    var ____id58 = getenv(__x68);
-    var __special = ____id58["special"];
-    var __stmt = ____id58["stmt"];
-    var __selfTr63 = ____id58["tr"];
+    var ____id59 = form;
+    var __x71 = ____id59[0];
+    var __args15 = cut(____id59, 1);
+    var ____id60 = getenv(__x71);
+    var __special = ____id60["special"];
+    var __stmt = ____id60["stmt"];
+    var __selfTr63 = ____id60["tr"];
     var __tr = terminator(stmt63 && ! __selfTr63);
-    return apply(__special, __args16) + __tr;
+    return _G.apply(__special, __args15) + __tr;
   };
-  _G._42ns42().intern("compile-special").bindRoot(compileSpecial, () => {
+  currentNs().intern("compile-special").bindRoot(compileSpecial, () => {
     return compileSpecial;
   }, (x) => {
     compileSpecial = x;
     return compileSpecial;
   });
   var parenthesizeCall63 = (x) => {
-    return ! atom63(x) && hd(x) === "%function" || precedence(x) > 0;
+    return ! atom63(x) && eq(hd(x), "%function") || precedence(x) > 0;
   };
-  _G._42ns42().intern("parenthesize-call?").bindRoot(parenthesizeCall63, () => {
+  currentNs().intern("parenthesize-call?").bindRoot(parenthesizeCall63, () => {
     return parenthesizeCall63;
   }, (x) => {
     parenthesizeCall63 = x;
@@ -3633,49 +4023,49 @@ var create = (globals) => {
       return __f11 + __args141;
     }
   };
-  _G._42ns42().intern("compile-call").bindRoot(compileCall, () => {
+  currentNs().intern("compile-call").bindRoot(compileCall, () => {
     return compileCall;
   }, (x) => {
     compileCall = x;
     return compileCall;
   });
   _G.compileCall = compileCall;
-  var opDelims = (parent, child, ...__r582) => {
-    var ____r582 = unstash(__r582);
-    var __parent = destash33(parent, ____r582);
-    var __child = destash33(child, ____r582);
-    var ____id59 = ____r582;
-    var __right = ____id59["right"];
-    var __e66;
+  var opDelims = (parent, child, ...__r634) => {
+    var ____r634 = unstash(__r634);
+    var __parent = destash33(parent, ____r634);
+    var __child = destash33(child, ____r634);
+    var ____id61 = ____r634;
+    var __right = ____id61["right"];
+    var __e73;
     if (__right) {
-      __e66 = _6261;
+      __e73 = _6261;
     } else {
-      __e66 = _62;
+      __e73 = _62;
     }
-    if (__e66(precedence(__child), precedence(__parent))) {
+    if (__e73(precedence(__child), precedence(__parent))) {
       return ["(", ")"];
     } else {
       return ["", ""];
     }
   };
-  _G._42ns42().intern("op-delims").bindRoot(opDelims, () => {
+  currentNs().intern("op-delims").bindRoot(opDelims, () => {
     return opDelims;
   }, (x) => {
     opDelims = x;
     return opDelims;
   });
   var compileInfix = (form) => {
-    var ____id60 = form;
-    var __op = ____id60[0];
-    var ____id61 = cut(____id60, 1);
-    var __a7 = ____id61[0];
-    var __b5 = ____id61[1];
-    var ____id62 = opDelims(form, __a7);
-    var __ao = ____id62[0];
-    var __ac = ____id62[1];
-    var ____id63 = opDelims(form, __b5, {["_stash"]: true, ["right"]: true});
-    var __bo = ____id63[0];
-    var __bc = ____id63[1];
+    var ____id62 = form;
+    var __op = ____id62[0];
+    var ____id63 = cut(____id62, 1);
+    var __a7 = ____id63[0];
+    var __b5 = ____id63[1];
+    var ____id64 = opDelims(form, __a7);
+    var __ao = ____id64[0];
+    var __ac = ____id64[1];
+    var ____id65 = opDelims(form, __b5, {["_stash"]: true, ["right"]: true});
+    var __bo = ____id65[0];
+    var __bc = ____id65[1];
     var __a8 = compile(__a7);
     var __b6 = compile(__b5);
     var __op1 = getop(__op);
@@ -3685,46 +4075,46 @@ var create = (globals) => {
       return __ao + __a8 + __ac + " " + __op1 + " " + __bo + __b6 + __bc;
     }
   };
-  _G._42ns42().intern("compile-infix").bindRoot(compileInfix, () => {
+  currentNs().intern("compile-infix").bindRoot(compileInfix, () => {
     return compileInfix;
   }, (x) => {
     compileInfix = x;
     return compileInfix;
   });
-  var compileFunction = (args, body, ...__r588) => {
-    var ____r588 = unstash(__r588);
-    var __args17 = destash33(args, ____r588);
-    var __body34 = destash33(body, ____r588);
-    var ____id64 = ____r588;
-    var __name14 = ____id64["name"];
-    var __prefix1 = ____id64["prefix"];
-    var __infix = ____id64["infix"];
-    var __tr1 = ____id64["tr"];
-    var __id65 = either(__name14, "");
-    var __args18 = compileArgs(__args17);
+  var compileFunction = (args, body, ...__r640) => {
+    var ____r640 = unstash(__r640);
+    var __args16 = destash33(args, ____r640);
+    var __body34 = destash33(body, ____r640);
+    var ____id66 = ____r640;
+    var __name15 = ____id66["name"];
+    var __prefix1 = ____id66["prefix"];
+    var __infix = ____id66["infix"];
+    var __tr1 = ____id66["tr"];
+    var __id67 = either(__name15, "");
+    var __args17 = compileArgs(__args16);
     indentLevel = indentLevel + 1;
-    var ____x69 = compile(__body34, {["_stash"]: true, ["stmt"]: true});
+    var ____x72 = compile(__body34, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __body35 = ____x69;
+    var __body35 = ____x72;
     var __ind = indentation();
-    var __e67;
+    var __e74;
     if (__infix) {
-      __e67 = " " + __infix;
+      __e74 = " " + __infix;
     } else {
-      __e67 = "";
+      __e74 = "";
     }
-    var __mid = __e67;
-    var __e68;
+    var __mid = __e74;
+    var __e75;
     if (__prefix1) {
-      __e68 = __prefix1 + " ";
+      __e75 = __prefix1 + " ";
     } else {
-      __e68 = "";
+      __e75 = "";
     }
-    var __p1 = __e68;
+    var __p2 = __e75;
     var __tr2 = either(__tr1, "");
-    return __p1 + __id65 + __args18 + __mid + " {\n" + __body35 + __ind + "}" + __tr2;
+    return __p2 + __id67 + __args17 + __mid + " {\n" + __body35 + __ind + "}" + __tr2;
   };
-  _G._42ns42().intern("compile-function").bindRoot(compileFunction, () => {
+  currentNs().intern("compile-function").bindRoot(compileFunction, () => {
     return compileFunction;
   }, (x) => {
     compileFunction = x;
@@ -3732,19 +4122,19 @@ var create = (globals) => {
   });
   _G.compileFunction = compileFunction;
   var canReturn63 = (form) => {
-    return is63(form) && (atom63(form) || !( hd(form) === "return") && ! statement63(hd(form)));
+    return is63(form) && (atom63(form) || ! eq(hd(form), "return") && ! statement63(hd(form)));
   };
-  _G._42ns42().intern("can-return?").bindRoot(canReturn63, () => {
+  currentNs().intern("can-return?").bindRoot(canReturn63, () => {
     return canReturn63;
   }, (x) => {
     canReturn63 = x;
     return canReturn63;
   });
-  var compile = (form, ...__r594) => {
-    var ____r594 = unstash(__r594);
-    var __form2 = destash33(form, ____r594);
-    var ____id66 = ____r594;
-    var __stmt1 = ____id66["stmt"];
+  var compile = (form, ...__r646) => {
+    var ____r646 = unstash(__r646);
+    var __form2 = destash33(form, ____r646);
+    var ____id68 = ____r646;
+    var __stmt1 = ____id68["stmt"];
     if (nil63(__form2)) {
       return "";
     } else {
@@ -3752,31 +4142,31 @@ var create = (globals) => {
         return compileSpecial(__form2, __stmt1);
       } else {
         var __tr3 = terminator(__stmt1);
-        var __e69;
+        var __e76;
         if (__stmt1) {
-          __e69 = indentation();
+          __e76 = indentation();
         } else {
-          __e69 = "";
+          __e76 = "";
         }
-        var __ind1 = __e69;
-        var __e70;
+        var __ind1 = __e76;
+        var __e77;
         if (atom63(__form2)) {
-          __e70 = compileAtom(__form2);
+          __e77 = compileAtom(__form2);
         } else {
-          var __e71;
+          var __e78;
           if (infix63(hd(__form2))) {
-            __e71 = compileInfix(__form2);
+            __e78 = compileInfix(__form2);
           } else {
-            __e71 = compileCall(hd(__form2), tl(__form2));
+            __e78 = compileCall(hd(__form2), tl(__form2));
           }
-          __e70 = __e71;
+          __e77 = __e78;
         }
-        var __form3 = __e70;
+        var __form3 = __e77;
         return __ind1 + __form3 + __tr3;
       }
     }
   };
-  _G._42ns42().intern("compile").bindRoot(compile, () => {
+  currentNs().intern("compile").bindRoot(compile, () => {
     return compile;
   }, (x) => {
     compile = x;
@@ -3785,28 +4175,28 @@ var create = (globals) => {
   _G.compile = compile;
   var lowerStatement = (form, tail63) => {
     var __hoist = [];
-    var __e36 = lower(form, __hoist, true, tail63);
-    var __e72;
-    if (some63(__hoist) && is63(__e36)) {
-      __e72 = join(["do"], __hoist, [__e36]);
+    var __e41 = lower(form, __hoist, true, tail63);
+    var __e79;
+    if (some63(__hoist) && is63(__e41)) {
+      __e79 = join(["do"], __hoist, [__e41]);
     } else {
-      var __e73;
-      if (is63(__e36)) {
-        __e73 = __e36;
+      var __e80;
+      if (is63(__e41)) {
+        __e80 = __e41;
       } else {
-        var __e74;
+        var __e81;
         if (_35(__hoist) > 1) {
-          __e74 = join(["do"], __hoist);
+          __e81 = join(["do"], __hoist);
         } else {
-          __e74 = hd(__hoist);
+          __e81 = hd(__hoist);
         }
-        __e73 = __e74;
+        __e80 = __e81;
       }
-      __e72 = __e73;
+      __e79 = __e80;
     }
-    return either(__e72, ["do"]);
+    return either(__e79, ["do"]);
   };
-  _G._42ns42().intern("lower-statement").bindRoot(lowerStatement, () => {
+  currentNs().intern("lower-statement").bindRoot(lowerStatement, () => {
     return lowerStatement;
   }, (x) => {
     lowerStatement = x;
@@ -3815,61 +4205,61 @@ var create = (globals) => {
   var lowerBody = (body, tail63) => {
     return lowerStatement(join(["do"], body), tail63);
   };
-  _G._42ns42().intern("lower-body").bindRoot(lowerBody, () => {
+  currentNs().intern("lower-body").bindRoot(lowerBody, () => {
     return lowerBody;
   }, (x) => {
     lowerBody = x;
     return lowerBody;
   });
   var literal63 = (form) => {
-    return atom63(form) || hd(form) === "%array" || hd(form) === "%object" || hd(form) === "%table";
+    return atom63(form) || eq(hd(form), "%array") || eq(hd(form), "%object") || eq(hd(form), "%table");
   };
-  _G._42ns42().intern("literal?").bindRoot(literal63, () => {
+  currentNs().intern("literal?").bindRoot(literal63, () => {
     return literal63;
   }, (x) => {
     literal63 = x;
     return literal63;
   });
   var standalone63 = (form) => {
-    return ! atom63(form) && ! infix63(hd(form)) && ! literal63(form) && !( "get" === hd(form)) && !( "%statement" === hd(form)) && !( two63(form) && accessor63(form[1])) || idLiteral63(form);
+    return ! atom63(form) && ! infix63(hd(form)) && ! literal63(form) && ! eq("get", hd(form)) && ! eq("%statement", hd(form)) && !( two63(form) && accessor63(form[1])) || idLiteral63(form);
   };
-  _G._42ns42().intern("standalone?").bindRoot(standalone63, () => {
+  currentNs().intern("standalone?").bindRoot(standalone63, () => {
     return standalone63;
   }, (x) => {
     standalone63 = x;
     return standalone63;
   });
   var lowerDo = (args, hoist, stmt63, tail63) => {
-    var ____x70 = almost(args);
+    var ____x73 = almost(args);
     var ____i52 = 0;
-    while (____i52 < _35(____x70)) {
-      var __x71 = ____x70[____i52];
-      var ____y5 = lower(__x71, hoist, stmt63);
+    while (____i52 < _35(____x73)) {
+      var __x74 = ____x73[____i52];
+      var ____y5 = lower(__x74, hoist, stmt63);
       if (yes(____y5)) {
-        var __e37 = ____y5;
-        if (standalone63(__e37)) {
-          add(hoist, __e37);
+        var __e42 = ____y5;
+        if (standalone63(__e42)) {
+          add(hoist, __e42);
         }
       }
       ____i52 = ____i52 + 1;
     }
-    var __e38 = lower(last(args), hoist, stmt63, tail63);
-    if (tail63 && canReturn63(__e38)) {
-      return ["return", __e38];
+    var __e43 = lower(last(args), hoist, stmt63, tail63);
+    if (tail63 && canReturn63(__e43)) {
+      return ["return", __e43];
     } else {
-      return __e38;
+      return __e43;
     }
   };
-  _G._42ns42().intern("lower-do").bindRoot(lowerDo, () => {
+  currentNs().intern("lower-do").bindRoot(lowerDo, () => {
     return lowerDo;
   }, (x) => {
     lowerDo = x;
     return lowerDo;
   });
   var lowerSet = (args, hoist, stmt63, tail63) => {
-    var ____id67 = args;
-    var __lh2 = ____id67[0];
-    var __rh2 = ____id67[1];
+    var ____id69 = args;
+    var __lh2 = ____id69[0];
+    var __rh2 = ____id69[1];
     var __lh11 = lower(__lh2, hoist);
     var __rh11 = lower(__rh2, hoist);
     add(hoist, ["%set", __lh11, __rh11]);
@@ -3877,60 +4267,60 @@ var create = (globals) => {
       return __lh11;
     }
   };
-  _G._42ns42().intern("lower-set").bindRoot(lowerSet, () => {
+  currentNs().intern("lower-set").bindRoot(lowerSet, () => {
     return lowerSet;
   }, (x) => {
     lowerSet = x;
     return lowerSet;
   });
   var lowerIf = (args, hoist, stmt63, tail63) => {
-    var ____id68 = args;
-    var __cond2 = ____id68[0];
-    var __then = ____id68[1];
-    var ___else = ____id68[2];
+    var ____id70 = args;
+    var __cond2 = ____id70[0];
+    var __then = ____id70[1];
+    var ___else = ____id70[2];
     if (stmt63) {
-      var __e76;
+      var __e83;
       if (is63(___else)) {
-        __e76 = [lowerBody([___else], tail63)];
+        __e83 = [lowerBody([___else], tail63)];
       }
-      return add(hoist, join(["%if", lower(__cond2, hoist), lowerBody([__then], tail63)], __e76));
+      return add(hoist, join(["%if", lower(__cond2, hoist), lowerBody([__then], tail63)], __e83));
     } else {
-      var __e39 = unique("e");
-      add(hoist, ["%local", __e39]);
-      var __e75;
+      var __e44 = unique("e");
+      add(hoist, ["%local", __e44]);
+      var __e82;
       if (is63(___else)) {
-        __e75 = [lower(["%set", __e39, ___else])];
+        __e82 = [lower(["%set", __e44, ___else])];
       }
-      add(hoist, join(["%if", lower(__cond2, hoist), lower(["%set", __e39, __then])], __e75));
-      return __e39;
+      add(hoist, join(["%if", lower(__cond2, hoist), lower(["%set", __e44, __then])], __e82));
+      return __e44;
     }
   };
-  _G._42ns42().intern("lower-if").bindRoot(lowerIf, () => {
+  currentNs().intern("lower-if").bindRoot(lowerIf, () => {
     return lowerIf;
   }, (x) => {
     lowerIf = x;
     return lowerIf;
   });
   var lowerShort = (x, args, hoist) => {
-    var ____id69 = args;
-    var __a9 = ____id69[0];
-    var __b7 = ____id69[1];
+    var ____id71 = args;
+    var __a9 = ____id71[0];
+    var __b7 = ____id71[1];
     var __hoist1 = [];
     var __b11 = lower(__b7, __hoist1);
     if (some63(__hoist1)) {
-      var __id70 = unique("id");
-      var __e77;
-      if (x === "and") {
-        __e77 = ["%if", __id70, __b7, __id70];
+      var __id72 = unique("id");
+      var __e84;
+      if (eq(x, "and")) {
+        __e84 = ["%if", __id72, __b7, __id72];
       } else {
-        __e77 = ["%if", __id70, __id70, __b7];
+        __e84 = ["%if", __id72, __id72, __b7];
       }
-      return lower(["do", ["%local", __id70, __a9], __e77], hoist);
+      return lower(["do", ["%local", __id72, __a9], __e84], hoist);
     } else {
       return [x, lower(__a9, hoist), __b11];
     }
   };
-  _G._42ns42().intern("lower-short").bindRoot(lowerShort, () => {
+  currentNs().intern("lower-short").bindRoot(lowerShort, () => {
     return lowerShort;
   }, (x) => {
     lowerShort = x;
@@ -3939,51 +4329,51 @@ var create = (globals) => {
   var lowerTry = (args, hoist, tail63) => {
     return add(hoist, ["%try", lowerBody(args, tail63)]);
   };
-  _G._42ns42().intern("lower-try").bindRoot(lowerTry, () => {
+  currentNs().intern("lower-try").bindRoot(lowerTry, () => {
     return lowerTry;
   }, (x) => {
     lowerTry = x;
     return lowerTry;
   });
-  var lowerConditionCase = (__x72, hoist, stmt63, tail63) => {
-    var ____id71 = __x72;
-    var ___var2 = ____id71[0];
-    var __form4 = ____id71[1];
-    var __clauses2 = cut(____id71, 2);
+  var lowerConditionCase = (__x75, hoist, stmt63, tail63) => {
+    var ____id73 = __x75;
+    var ___var2 = ____id73[0];
+    var __form4 = ____id73[1];
+    var __clauses2 = cut(____id73, 2);
     if (stmt63) {
-      return add(hoist, join(["%condition-case", ___var2, lowerBody(["do", __form4], tail63)], map((__x73) => {
-        var ____id72 = __x73;
-        var __which1 = ____id72[0];
-        var __body36 = cut(____id72, 1);
-        if (__which1 === "finally") {
+      return add(hoist, join(["%condition-case", ___var2, lowerBody(["do", __form4], tail63)], map((__x76) => {
+        var ____id74 = __x76;
+        var __which1 = ____id74[0];
+        var __body36 = cut(____id74, 1);
+        if (eq(__which1, "finally")) {
           return [__which1, lowerBody(__body36)];
         } else {
-          var ____id73 = __body36;
-          var __x74 = ____id73[0];
-          var __args19 = cut(____id73, 1);
-          return [__which1, lower(__x74), lowerBody(__args19, tail63)];
+          var ____id75 = __body36;
+          var __x77 = ____id75[0];
+          var __args18 = cut(____id75, 1);
+          return [__which1, lower(__x77), lowerBody(__args18, tail63)];
         }
       }, __clauses2)));
     } else {
-      var __e40 = unique("e");
-      add(hoist, ["%local", __e40]);
-      add(hoist, join(["%condition-case", ___var2, lower(["%set", __e40, __form4])], map((__x75) => {
-        var ____id74 = __x75;
-        var __which2 = ____id74[0];
-        var __body37 = cut(____id74, 1);
-        if (__which2 === "finally") {
+      var __e45 = unique("e");
+      add(hoist, ["%local", __e45]);
+      add(hoist, join(["%condition-case", ___var2, lower(["%set", __e45, __form4])], map((__x78) => {
+        var ____id76 = __x78;
+        var __which2 = ____id76[0];
+        var __body37 = cut(____id76, 1);
+        if (eq(__which2, "finally")) {
           return [__which2, lowerBody(__body37)];
         } else {
-          var ____id75 = __body37;
-          var __x76 = ____id75[0];
-          var __args20 = cut(____id75, 1);
-          return [__which2, lower(__x76), lower(["%set", __e40, join(["do"], __args20)])];
+          var ____id77 = __body37;
+          var __x79 = ____id77[0];
+          var __args19 = cut(____id77, 1);
+          return [__which2, lower(__x79), lower(["%set", __e45, join(["do"], __args19)])];
         }
       }, __clauses2)));
-      return __e40;
+      return __e45;
     }
   };
-  _G._42ns42().intern("lower-condition-case").bindRoot(lowerConditionCase, () => {
+  currentNs().intern("lower-condition-case").bindRoot(lowerConditionCase, () => {
     return lowerConditionCase;
   }, (x) => {
     lowerConditionCase = x;
@@ -3991,33 +4381,33 @@ var create = (globals) => {
   });
   _G.lowerConditionCase = lowerConditionCase;
   var lowerWhile = (args, hoist) => {
-    var ____id76 = args;
-    var __c5 = ____id76[0];
-    var __body38 = cut(____id76, 1);
-    var __pre = [];
-    var __c6 = lower(__c5, __pre);
-    var __e78;
-    if (none63(__pre)) {
-      __e78 = ["while", __c6, lowerBody(__body38)];
+    var ____id78 = args;
+    var __c5 = ____id78[0];
+    var __body38 = cut(____id78, 1);
+    var __pre1 = [];
+    var __c6 = lower(__c5, __pre1);
+    var __e85;
+    if (none63(__pre1)) {
+      __e85 = ["while", __c6, lowerBody(__body38)];
     } else {
-      __e78 = ["while", true, join(["do"], __pre, [["%if", ["not", __c6], ["break"]], lowerBody(__body38)])];
+      __e85 = ["while", true, join(["do"], __pre1, [["%if", ["not", __c6], ["break"]], lowerBody(__body38)])];
     }
-    return add(hoist, __e78);
+    return add(hoist, __e85);
   };
-  _G._42ns42().intern("lower-while").bindRoot(lowerWhile, () => {
+  currentNs().intern("lower-while").bindRoot(lowerWhile, () => {
     return lowerWhile;
   }, (x) => {
     lowerWhile = x;
     return lowerWhile;
   });
   var lowerFor = (args, hoist) => {
-    var ____id77 = args;
-    var __t4 = ____id77[0];
-    var __k39 = ____id77[1];
-    var __body39 = cut(____id77, 2);
-    return add(hoist, ["%for", lower(__t4, hoist), __k39, lowerBody(__body39)]);
+    var ____id79 = args;
+    var __t4 = ____id79[0];
+    var __k41 = ____id79[1];
+    var __body39 = cut(____id79, 2);
+    return add(hoist, ["%for", lower(__t4, hoist), __k41, lowerBody(__body39)]);
   };
-  _G._42ns42().intern("lower-for").bindRoot(lowerFor, () => {
+  currentNs().intern("lower-for").bindRoot(lowerFor, () => {
     return lowerFor;
   }, (x) => {
     lowerFor = x;
@@ -4025,28 +4415,28 @@ var create = (globals) => {
   });
   var lowerTable = (args, hoist, stmt63, tail63) => {
     var __expr3 = join(["%table"], keys(args));
-    var ____x77 = args;
+    var ____x80 = args;
     var ____i53 = 0;
-    while (____i53 < _35(____x77)) {
-      var __x78 = ____x77[____i53];
-      if (atom63(__x78)) {
-        add(__expr3, __x78);
+    while (____i53 < _35(____x80)) {
+      var __x81 = ____x80[____i53];
+      if (atom63(__x81)) {
+        add(__expr3, __x81);
       } else {
-        if (_35(__x78) <= 2) {
-          var ____id78 = __x78;
-          var __name15 = ____id78[0];
-          var __v29 = ____id78[1];
-          add(__expr3, [lower(__name15, hoist), lower(__v29, hoist)]);
+        if (_35(__x81) <= 2) {
+          var ____id80 = __x81;
+          var __name16 = ____id80[0];
+          var __v29 = ____id80[1];
+          add(__expr3, [lower(__name16, hoist), lower(__v29, hoist)]);
         } else {
-          var ____id79 = __x78;
-          var __prefix2 = ____id79[0];
-          var __name16 = ____id79[1];
-          var __args21 = ____id79[2];
-          var __body40 = cut(____id79, 3);
+          var ____id81 = __x81;
+          var __prefix2 = ____id81[0];
+          var __name17 = ____id81[1];
+          var __args20 = ____id81[2];
+          var __body40 = cut(____id81, 3);
           if (some63(__body40)) {
-            add(__expr3, [__prefix2, lower(__name16, hoist), __args21, lowerBody(__body40, true)]);
+            add(__expr3, [__prefix2, lower(__name17, hoist), __args20, lowerBody(__body40, true)]);
           } else {
-            add(__expr3, [__prefix2, lower(__name16, hoist), lower(__args21, hoist)]);
+            add(__expr3, [__prefix2, lower(__name17, hoist), lower(__args20, hoist)]);
           }
         }
       }
@@ -4054,30 +4444,30 @@ var create = (globals) => {
     }
     return __expr3;
   };
-  _G._42ns42().intern("lower-table").bindRoot(lowerTable, () => {
+  currentNs().intern("lower-table").bindRoot(lowerTable, () => {
     return lowerTable;
   }, (x) => {
     lowerTable = x;
     return lowerTable;
   });
   _G.lowerTable = lowerTable;
-  var lowerClass = (__x79, hoist, stmt63, tail63) => {
-    var ____id80 = __x79;
-    var __x80 = ____id80[0];
-    var __body41 = cut(____id80, 1);
+  var lowerClass = (__x82, hoist, stmt63, tail63) => {
+    var ____id82 = __x82;
+    var __x83 = ____id82[0];
+    var __body41 = cut(____id82, 1);
     var __body42 = tl(lowerTable(__body41, hoist));
-    var ____id81 = __x80;
-    var __name17 = ____id81[0];
-    var __parent1 = ____id81[1];
+    var ____id83 = __x83;
+    var __name18 = ____id83[0];
+    var __parent1 = ____id83[1];
     var __parent11 = lower(__parent1, hoist);
-    var __expr4 = join(["%class", [__name17, __parent11]], __body42);
+    var __expr4 = join(["%class", [__name18, __parent11]], __body42);
     if (stmt63 && ! tail63) {
-      return add(hoist, ["%local", __name17, __expr4]);
+      return add(hoist, ["%local", __name18, __expr4]);
     } else {
       return __expr4;
     }
   };
-  _G._42ns42().intern("lower-class").bindRoot(lowerClass, () => {
+  currentNs().intern("lower-class").bindRoot(lowerClass, () => {
     return lowerClass;
   }, (x) => {
     lowerClass = x;
@@ -4085,25 +4475,25 @@ var create = (globals) => {
   });
   _G.lowerClass = lowerClass;
   var lowerFunction = (args) => {
-    var ____id82 = args;
-    var __a10 = ____id82[0];
-    var __body43 = cut(____id82, 1);
+    var ____id84 = args;
+    var __a10 = ____id84[0];
+    var __body43 = cut(____id84, 1);
     return join(["%function", __a10, lowerBody(__body43, true)], keys(args));
   };
-  _G._42ns42().intern("lower-function").bindRoot(lowerFunction, () => {
+  currentNs().intern("lower-function").bindRoot(lowerFunction, () => {
     return lowerFunction;
   }, (x) => {
     lowerFunction = x;
     return lowerFunction;
   });
   var lowerDefinition = (kind, args, hoist) => {
-    var ____id83 = args;
-    var __name18 = ____id83[0];
-    var __args22 = ____id83[1];
-    var __body44 = cut(____id83, 2);
-    return add(hoist, [kind, __name18, __args22, lowerBody(__body44, true)]);
+    var ____id85 = args;
+    var __name19 = ____id85[0];
+    var __args21 = ____id85[1];
+    var __body44 = cut(____id85, 2);
+    return add(hoist, [kind, __name19, __args21, lowerBody(__body44, true)]);
   };
-  _G._42ns42().intern("lower-definition").bindRoot(lowerDefinition, () => {
+  currentNs().intern("lower-definition").bindRoot(lowerDefinition, () => {
     return lowerDefinition;
   }, (x) => {
     lowerDefinition = x;
@@ -4117,16 +4507,16 @@ var create = (globals) => {
       return __form5;
     }
   };
-  _G._42ns42().intern("lower-call").bindRoot(lowerCall, () => {
+  currentNs().intern("lower-call").bindRoot(lowerCall, () => {
     return lowerCall;
   }, (x) => {
     lowerCall = x;
     return lowerCall;
   });
   var pairwise63 = (form) => {
-    return in63(hd(form), ["<", "<=", "=", ">=", ">"]);
+    return in63(name(hd(form)), ["<", "<=", "=", ">=", ">"]);
   };
-  _G._42ns42().intern("pairwise?").bindRoot(pairwise63, () => {
+  currentNs().intern("pairwise?").bindRoot(pairwise63, () => {
     return pairwise63;
   }, (x) => {
     pairwise63 = x;
@@ -4134,20 +4524,20 @@ var create = (globals) => {
   });
   var lowerPairwise = (form) => {
     if (pairwise63(form)) {
-      var __e41 = [];
-      var ____id84 = form;
-      var __x81 = ____id84[0];
-      var __args23 = cut(____id84, 1);
+      var __e46 = [];
+      var ____id86 = form;
+      var __x84 = ____id86[0];
+      var __args22 = cut(____id86, 1);
       reduce((a, b) => {
-        add(__e41, [__x81, a, b]);
+        add(__e46, [__x84, a, b]);
         return a;
-      }, __args23);
-      return join(["and"], reverse(__e41));
+      }, __args22);
+      return join(["and"], reverse(__e46));
     } else {
       return form;
     }
   };
-  _G._42ns42().intern("lower-pairwise").bindRoot(lowerPairwise, () => {
+  currentNs().intern("lower-pairwise").bindRoot(lowerPairwise, () => {
     return lowerPairwise;
   }, (x) => {
     lowerPairwise = x;
@@ -4156,7 +4546,7 @@ var create = (globals) => {
   var lowerInfix63 = (form) => {
     return infix63(hd(form)) && _35(form) > 3;
   };
-  _G._42ns42().intern("lower-infix?").bindRoot(lowerInfix63, () => {
+  currentNs().intern("lower-infix?").bindRoot(lowerInfix63, () => {
     return lowerInfix63;
   }, (x) => {
     lowerInfix63 = x;
@@ -4164,30 +4554,30 @@ var create = (globals) => {
   });
   var lowerInfix = (form, hoist) => {
     var __form6 = lowerPairwise(form);
-    var ____id85 = __form6;
-    var __x82 = ____id85[0];
-    var __args24 = cut(____id85, 1);
+    var ____id87 = __form6;
+    var __x85 = ____id87[0];
+    var __args23 = cut(____id87, 1);
     return lower(reduce((a, b) => {
-      return [__x82, b, a];
-    }, reverse(__args24)), hoist);
+      return [__x85, b, a];
+    }, reverse(__args23)), hoist);
   };
-  _G._42ns42().intern("lower-infix").bindRoot(lowerInfix, () => {
+  currentNs().intern("lower-infix").bindRoot(lowerInfix, () => {
     return lowerInfix;
   }, (x) => {
     lowerInfix = x;
     return lowerInfix;
   });
-  var lowerSpecial = (__x83, hoist) => {
-    var ____id86 = __x83;
-    var __name19 = ____id86[0];
-    var __args25 = cut(____id86, 1);
+  var lowerSpecial = (__x86, hoist) => {
+    var ____id88 = __x86;
+    var __name20 = ____id88[0];
+    var __args24 = cut(____id88, 1);
     var __args151 = map((x) => {
       return lower(x, hoist);
-    }, __args25);
-    var __form7 = join([__name19], __args151);
+    }, __args24);
+    var __form7 = join([__name20], __args151);
     return add(hoist, __form7);
   };
-  _G._42ns42().intern("lower-special").bindRoot(lowerSpecial, () => {
+  currentNs().intern("lower-special").bindRoot(lowerSpecial, () => {
     return lowerSpecial;
   }, (x) => {
     lowerSpecial = x;
@@ -4206,49 +4596,49 @@ var create = (globals) => {
           if (lowerInfix63(form)) {
             return lowerInfix(form, hoist);
           } else {
-            var ____id87 = form;
-            var __x84 = ____id87[0];
-            var __args26 = cut(____id87, 1);
-            if (__x84 === "do") {
-              return lowerDo(__args26, hoist, stmt63, tail63);
+            var ____id89 = form;
+            var __x87 = ____id89[0];
+            var __args25 = cut(____id89, 1);
+            if (eq(__x87, "do")) {
+              return lowerDo(__args25, hoist, stmt63, tail63);
             } else {
-              if (__x84 === "%call") {
-                return lower(__args26, hoist, stmt63, tail63);
+              if (eq(__x87, "%call")) {
+                return lower(__args25, hoist, stmt63, tail63);
               } else {
-                if (__x84 === "%set") {
-                  return lowerSet(__args26, hoist, stmt63, tail63);
+                if (eq(__x87, "%set")) {
+                  return lowerSet(__args25, hoist, stmt63, tail63);
                 } else {
-                  if (__x84 === "%if") {
-                    return lowerIf(__args26, hoist, stmt63, tail63);
+                  if (eq(__x87, "%if")) {
+                    return lowerIf(__args25, hoist, stmt63, tail63);
                   } else {
-                    if (__x84 === "%try") {
-                      return lowerTry(__args26, hoist, tail63);
+                    if (eq(__x87, "%try")) {
+                      return lowerTry(__args25, hoist, tail63);
                     } else {
-                      if (__x84 === "%condition-case") {
-                        return lowerConditionCase(__args26, hoist, stmt63, tail63);
+                      if (eq(__x87, "%condition-case")) {
+                        return lowerConditionCase(__args25, hoist, stmt63, tail63);
                       } else {
-                        if (__x84 === "while") {
-                          return lowerWhile(__args26, hoist);
+                        if (eq(__x87, "while")) {
+                          return lowerWhile(__args25, hoist);
                         } else {
-                          if (__x84 === "%for") {
-                            return lowerFor(__args26, hoist);
+                          if (eq(__x87, "%for")) {
+                            return lowerFor(__args25, hoist);
                           } else {
-                            if (__x84 === "%table") {
-                              return lowerTable(__args26, hoist, stmt63, tail63);
+                            if (eq(__x87, "%table")) {
+                              return lowerTable(__args25, hoist, stmt63, tail63);
                             } else {
-                              if (__x84 === "%class") {
-                                return lowerClass(__args26, hoist, stmt63, tail63);
+                              if (eq(__x87, "%class")) {
+                                return lowerClass(__args25, hoist, stmt63, tail63);
                               } else {
-                                if (__x84 === "%function") {
-                                  return lowerFunction(__args26);
+                                if (eq(__x87, "%function")) {
+                                  return lowerFunction(__args25);
                                 } else {
-                                  if (__x84 === "%local-function" || __x84 === "%global-function") {
-                                    return lowerDefinition(__x84, __args26, hoist);
+                                  if (eq(__x87, "%local-function") || eq(__x87, "%global-function")) {
+                                    return lowerDefinition(__x87, __args25, hoist);
                                   } else {
-                                    if (in63(__x84, ["and", "or"])) {
-                                      return lowerShort(__x84, __args26, hoist);
+                                    if (in63(name(__x87), ["and", "or"])) {
+                                      return lowerShort(__x87, __args25, hoist);
                                     } else {
-                                      if (statement63(__x84)) {
+                                      if (statement63(__x87)) {
                                         return lowerSpecial(form, hoist);
                                       } else {
                                         return lowerCall(form, hoist);
@@ -4271,7 +4661,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("lower").bindRoot(lower, () => {
+  currentNs().intern("lower").bindRoot(lower, () => {
     return lower;
   }, (x) => {
     lower = x;
@@ -4281,7 +4671,7 @@ var create = (globals) => {
   var expand = (form) => {
     return lower(macroexpand(form));
   };
-  _G._42ns42().intern("expand").bindRoot(expand, () => {
+  currentNs().intern("expand").bindRoot(expand, () => {
     return expand;
   }, (x) => {
     expand = x;
@@ -4289,7 +4679,7 @@ var create = (globals) => {
   });
   _G.expand = expand;
   var vm = require("vm");
-  _G._42ns42().intern("vm").bindRoot(vm, () => {
+  currentNs().intern("vm").bindRoot(vm, () => {
     return vm;
   }, (x) => {
     vm = x;
@@ -4300,14 +4690,14 @@ var create = (globals) => {
     __sandbox._G = __sandbox;
     return __sandbox;
   };
-  _G._42ns42().intern("context").bindRoot(context, () => {
+  currentNs().intern("context").bindRoot(context, () => {
     return context;
   }, (x) => {
     context = x;
     return context;
   });
   var sandbox = context(_G);
-  _G._42ns42().intern("sandbox").bindRoot(sandbox, () => {
+  currentNs().intern("sandbox").bindRoot(sandbox, () => {
     return sandbox;
   }, (x) => {
     sandbox = x;
@@ -4316,7 +4706,7 @@ var create = (globals) => {
   var run = (code, sandbox) => {
     return vm.runInContext(code, sandbox || _G);
   };
-  _G._42ns42().intern("run").bindRoot(run, () => {
+  currentNs().intern("run").bindRoot(run, () => {
     return run;
   }, (x) => {
     run = x;
@@ -4326,7 +4716,7 @@ var create = (globals) => {
     var __code = compile(expand(["%set", "%result", form]));
     return run(__code);
   };
-  _G._42ns42().intern("eval").bindRoot(_eval, () => {
+  currentNs().intern("eval").bindRoot(_eval, () => {
     return _eval;
   }, (x) => {
     _eval = x;
@@ -4334,57 +4724,57 @@ var create = (globals) => {
   });
   _G["eval"] = _eval;
   var immediateCall63 = (x) => {
-    return obj63(x) && obj63(hd(x)) && hd(hd(x)) === "%function";
+    return obj63(x) && obj63(hd(x)) && eq(hd(hd(x)), "%function");
   };
-  _G._42ns42().intern("immediate-call?").bindRoot(immediateCall63, () => {
+  currentNs().intern("immediate-call?").bindRoot(immediateCall63, () => {
     return immediateCall63;
   }, (x) => {
     immediateCall63 = x;
     return immediateCall63;
   });
   _G.immediateCall63 = immediateCall63;
-  setenv("%call", {["_stash"]: true, ["special"]: (f, ...__r691) => {
-    var ____r691 = unstash(__r691);
-    var __f2 = destash33(f, ____r691);
-    var ____id88 = ____r691;
-    var __args27 = cut(____id88, 0);
-    return compileCall(__f2, __args27);
-  }});
-  setenv("%brackets", {["_stash"]: true, ["special"]: (...args) => {
-    var __args28 = unstash(args);
-    return "[" + inner(compileArgs(__args28)) + "]";
-  }});
-  setenv("do", {["_stash"]: true, ["special"]: (...forms) => {
+  setenv37("%call", "special", (f, ...__r743) => {
+    var ____r743 = unstash(__r743);
+    var __f2 = destash33(f, ____r743);
+    var ____id90 = ____r743;
+    var __args26 = cut(____id90, 0);
+    return compileCall(__f2, __args26);
+  });
+  setenv37("%brackets", "special", (...args) => {
+    var __args27 = unstash(args);
+    return "[" + inner(compileArgs(__args27)) + "]";
+  });
+  setenv37("do", "special", (...forms) => {
     var __forms = unstash(forms);
     var __s5 = "";
-    var ____x85 = __forms;
+    var ____x88 = __forms;
     var ____i54 = 0;
-    while (____i54 < _35(____x85)) {
-      var __x86 = ____x85[____i54];
-      __s5 = __s5 + compile(__x86, {["_stash"]: true, ["stmt"]: true});
-      if (! atom63(__x86)) {
-        if (hd(__x86) === "return" || hd(__x86) === "break") {
+    while (____i54 < _35(____x88)) {
+      var __x89 = ____x88[____i54];
+      __s5 = __s5 + compile(__x89, {["_stash"]: true, ["stmt"]: true});
+      if (! atom63(__x89)) {
+        if (eq(hd(__x89), "return") || eq(hd(__x89), "break")) {
           break;
         }
       }
       ____i54 = ____i54 + 1;
     }
     return __s5;
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%if", {["_stash"]: true, ["special"]: (cond, cons, alt) => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%if", "special", (cond, cons, alt) => {
     var __cond3 = compile(cond);
     indentLevel = indentLevel + 1;
-    var ____x87 = compile(cons, {["_stash"]: true, ["stmt"]: true});
+    var ____x90 = compile(cons, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __cons = ____x87;
-    var __e79;
+    var __cons = ____x90;
+    var __e86;
     if (alt) {
       indentLevel = indentLevel + 1;
-      var ____x88 = compile(alt, {["_stash"]: true, ["stmt"]: true});
+      var ____x91 = compile(alt, {["_stash"]: true, ["stmt"]: true});
       indentLevel = indentLevel - 1;
-      __e79 = ____x88;
+      __e86 = ____x91;
     }
-    var __alt = __e79;
+    var __alt = __e86;
     var __ind2 = indentation();
     var __s6 = "";
     __s6 = __s6 + __ind2 + "if (" + __cond3 + ") {\n" + __cons + __ind2 + "}";
@@ -4392,254 +4782,254 @@ var create = (globals) => {
       __s6 = __s6 + " else {\n" + __alt + __ind2 + "}";
     }
     return __s6 + "\n";
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("while", {["_stash"]: true, ["special"]: (cond, form) => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("while", "special", (cond, form) => {
     var __cond4 = compile(cond);
     indentLevel = indentLevel + 1;
-    var ____x89 = compile(form, {["_stash"]: true, ["stmt"]: true});
+    var ____x92 = compile(form, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __body45 = ____x89;
+    var __body45 = ____x92;
     var __ind3 = indentation();
     return __ind3 + "while (" + __cond4 + ") {\n" + __body45 + __ind3 + "}\n";
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%for", {["_stash"]: true, ["special"]: (t, k, form) => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%for", "special", (t, k, form) => {
     var __t5 = compile(t);
     var __ind4 = indentation();
     indentLevel = indentLevel + 1;
-    var ____x90 = compile(form, {["_stash"]: true, ["stmt"]: true});
+    var ____x93 = compile(form, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __body46 = ____x90;
+    var __body46 = ____x93;
     return __ind4 + "for (" + k + " in " + __t5 + ") {\n" + __body46 + __ind4 + "}\n";
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%try", {["_stash"]: true, ["special"]: (form) => {
-    var __e42 = unique("e");
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%try", "special", (form) => {
+    var __e47 = unique("e");
     var __ind5 = indentation();
     indentLevel = indentLevel + 1;
-    var ____x91 = compile(form, {["_stash"]: true, ["stmt"]: true});
+    var ____x94 = compile(form, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __body47 = ____x91;
-    var __hf = ["return", ["%array", false, __e42]];
+    var __body47 = ____x94;
+    var __hf = ["return", ["%array", false, __e47]];
     indentLevel = indentLevel + 1;
-    var ____x92 = compile(__hf, {["_stash"]: true, ["stmt"]: true});
+    var ____x95 = compile(__hf, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __h = ____x92;
-    return __ind5 + "try {\n" + __body47 + __ind5 + "}\n" + __ind5 + "catch (" + __e42 + ") {\n" + __h + __ind5 + "}\n";
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%condition-case", {["_stash"]: true, ["special"]: (e, form, ...__r696) => {
-    var ____r696 = unstash(__r696);
-    var __e43 = destash33(e, ____r696);
-    var __form8 = destash33(form, ____r696);
-    var ____id89 = ____r696;
-    var __clauses3 = cut(____id89, 0);
+    var __h = ____x95;
+    return __ind5 + "try {\n" + __body47 + __ind5 + "}\n" + __ind5 + "catch (" + __e47 + ") {\n" + __h + __ind5 + "}\n";
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%condition-case", "special", (e, form, ...__r748) => {
+    var ____r748 = unstash(__r748);
+    var __e48 = destash33(e, ____r748);
+    var __form8 = destash33(form, ____r748);
+    var ____id91 = ____r748;
+    var __clauses3 = cut(____id91, 0);
     var __ind6 = indentation();
     indentLevel = indentLevel + 1;
-    var ____x93 = compile(__form8, {["_stash"]: true, ["stmt"]: true});
+    var ____x96 = compile(__form8, {["_stash"]: true, ["stmt"]: true});
     indentLevel = indentLevel - 1;
-    var __body48 = ____x93;
+    var __body48 = ____x96;
     var __str = __ind6 + "try {\n" + __body48 + __ind6 + "}";
     var __form9 = [];
-    var ____x94 = __clauses3;
+    var ____x97 = __clauses3;
     var ____i55 = 0;
-    while (____i55 < _35(____x94)) {
-      var __x95 = ____x94[____i55];
-      if (hd(__x95) === "catch") {
-        var ____id90 = __x95;
-        var ___2 = ____id90[0];
-        var __type1 = ____id90[1];
-        var __body49 = ____id90[2];
-        var __e80;
+    while (____i55 < _35(____x97)) {
+      var __x98 = ____x97[____i55];
+      if (eq(hd(__x98), "catch")) {
+        var ____id92 = __x98;
+        var ___2 = ____id92[0];
+        var __type1 = ____id92[1];
+        var __body49 = ____id92[2];
+        var __e87;
         if (boolean63(__type1)) {
-          __e80 = __type1;
+          __e87 = __type1;
         } else {
-          __e80 = ["instanceof", __e43, __type1];
+          __e87 = ["instanceof", __e48, __type1];
         }
-        add(__form9, __e80);
+        add(__form9, __e87);
         add(__form9, __body49);
       }
       ____i55 = ____i55 + 1;
     }
     if (! none63(__form9)) {
-      add(__form9, ["%throw", __e43]);
+      add(__form9, ["%throw", __e48]);
       var __expr5 = hd(expandIf(__form9));
       indentLevel = indentLevel + 1;
-      var ____x96 = compile(__expr5, {["_stash"]: true, ["stmt"]: true});
+      var ____x99 = compile(__expr5, {["_stash"]: true, ["stmt"]: true});
       indentLevel = indentLevel - 1;
-      var __h1 = ____x96;
-      __str = __str + " catch (" + __e43 + ") {\n" + __h1 + __ind6 + "}";
+      var __h1 = ____x99;
+      __str = __str + " catch (" + __e48 + ") {\n" + __h1 + __ind6 + "}";
     }
     var __clause = first((x) => {
-      if (hd(x) === "finally") {
+      if (eq(hd(x), "finally")) {
         return x;
       }
     }, __clauses3);
     if (__clause) {
       var __body50 = tl(__clause);
       indentLevel = indentLevel + 1;
-      var ____x97 = compile(join(["do"], __body50), {["_stash"]: true, ["stmt"]: true});
+      var ____x100 = compile(join(["do"], __body50), {["_stash"]: true, ["stmt"]: true});
       indentLevel = indentLevel - 1;
-      var __h2 = ____x97;
+      var __h2 = ____x100;
       __str = __str + " finally {\n" + __h2 + __ind6 + "}";
     }
     __str = __str + "\n";
     return __str;
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%delete", {["_stash"]: true, ["special"]: (place) => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%delete", "special", (place) => {
     return indentation() + "delete " + compile(place);
-  }, ["stmt"]: true});
-  setenv("break", {["_stash"]: true, ["special"]: () => {
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("break", "special", () => {
     return indentation() + "break";
-  }, ["stmt"]: true});
-  setenv("%function", {["_stash"]: true, ["special"]: (args, body, ...__r700) => {
-    var ____r700 = unstash(__r700);
-    var __args29 = destash33(args, ____r700);
-    var __body51 = destash33(body, ____r700);
-    var ____id91 = ____r700;
-    var __infix1 = ____id91["infix"];
-    var __prefix3 = ____id91["prefix"];
-    var __e81;
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("%function", "special", (args, body, ...__r752) => {
+    var ____r752 = unstash(__r752);
+    var __args28 = destash33(args, ____r752);
+    var __body51 = destash33(body, ____r752);
+    var ____id93 = ____r752;
+    var __infix1 = ____id93["infix"];
+    var __prefix3 = ____id93["prefix"];
+    var __e88;
     if (__prefix3) {
-      __e81 = undefined;
+      __e88 = undefined;
     } else {
-      __e81 = "=>";
+      __e88 = "=>";
     }
-    return compileFunction(__args29, __body51, {["_stash"]: true, ["infix"]: __e81, ["prefix"]: __prefix3});
-  }});
-  setenv("%global-function", {["_stash"]: true, ["special"]: (name, args, body) => {
+    return compileFunction(__args28, __body51, {["_stash"]: true, ["infix"]: __e88, ["prefix"]: __prefix3});
+  });
+  setenv37("%global-function", "special", (name, args, body) => {
     return compile(["%local", name, ["%function", args, body]], {["_stash"]: true, ["stmt"]: true});
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%local-function", {["_stash"]: true, ["special"]: (name, args, body) => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%local-function", "special", (name, args, body) => {
     return compile(["%local", name, ["%function", args, body]], {["_stash"]: true, ["stmt"]: true});
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("return", {["_stash"]: true, ["special"]: (x) => {
-    var __e82;
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("return", "special", (x) => {
+    var __e89;
     if (nil63(x)) {
-      __e82 = "return";
+      __e89 = "return";
     } else {
-      __e82 = "return " + compile(x);
+      __e89 = "return " + compile(x);
     }
-    var __x98 = __e82;
-    return indentation() + __x98;
-  }, ["stmt"]: true});
-  setenv("async", {["_stash"]: true, ["special"]: (...x) => {
-    var __x99 = unstash(x);
-    if (_35(__x99) > 1) {
-      return compile(join([["async", hd(__x99)]], tl(__x99)));
+    var __x101 = __e89;
+    return indentation() + __x101;
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("async", "special", (...x) => {
+    var __x102 = unstash(x);
+    if (_35(__x102) > 1) {
+      return compile(join([["async", hd(__x102)]], tl(__x102)));
     } else {
-      return "async " + compile(hd(__x99));
+      return "async " + compile(hd(__x102));
     }
-  }});
-  setenv("await", {["_stash"]: true, ["special"]: (...x) => {
-    var __x100 = unstash(x);
-    if (_35(__x100) > 1) {
-      return compile(join([["await", hd(__x100)]], tl(__x100)));
+  });
+  setenv37("await", "special", (...x) => {
+    var __x103 = unstash(x);
+    if (_35(__x103) > 1) {
+      return compile(join([["await", hd(__x103)]], tl(__x103)));
     } else {
-      return "await (" + compile(hd(__x100)) + ")";
+      return "await (" + compile(hd(__x103)) + ")";
     }
-  }});
-  setenv("new", {["_stash"]: true, ["special"]: (...x) => {
-    var __x101 = unstash(x);
-    if (_35(__x101) > 1) {
-      return compile(join([["new", hd(__x101)]], tl(__x101)));
+  });
+  setenv37("new", "special", (...x) => {
+    var __x104 = unstash(x);
+    if (_35(__x104) > 1) {
+      return compile(join([["new", hd(__x104)]], tl(__x104)));
     } else {
-      return "new " + compile(hd(__x101));
+      return "new " + compile(hd(__x104));
     }
-  }});
-  setenv("instanceof", {["_stash"]: true, ["special"]: (a, b) => {
+  });
+  setenv37("instanceof", "special", (a, b) => {
     return "(" + compile(a) + " instanceof " + compile(b) + ")";
-  }});
-  setenv("typeof", {["_stash"]: true, ["special"]: (x) => {
+  });
+  setenv37("typeof", "special", (x) => {
     return "typeof(" + compile(x) + ")";
-  }});
-  setenv("%throw", {["_stash"]: true, ["special"]: (x) => {
+  });
+  setenv37("%throw", "special", (x) => {
     return indentation() + "throw " + compile(x);
-  }, ["stmt"]: true});
-  setenv("error", {["_stash"]: true, ["special"]: (x) => {
-    var __e44 = "throw " + compile(["new", ["Error", x]]);
-    return indentation() + __e44;
-  }, ["stmt"]: true});
-  setenv("%local", {["_stash"]: true, ["special"]: (name, value) => {
-    var __id92 = compile(name);
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("error", "special", (x) => {
+    var __e49 = "throw " + compile(["new", ["Error", x]]);
+    return indentation() + __e49;
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("%local", "special", (name, value) => {
+    var __id94 = compile(name);
     var __value1 = compile(value);
-    var __e83;
+    var __e90;
     if (is63(value)) {
-      __e83 = " = " + __value1;
+      __e90 = " = " + __value1;
     } else {
-      __e83 = "";
+      __e90 = "";
     }
-    var __rh3 = __e83;
+    var __rh3 = __e90;
     var __keyword = "var ";
     var __ind7 = indentation();
-    return __ind7 + __keyword + __id92 + __rh3;
-  }, ["stmt"]: true});
-  setenv("%set", {["_stash"]: true, ["special"]: (lh, rh) => {
+    return __ind7 + __keyword + __id94 + __rh3;
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("%set", "special", (lh, rh) => {
     if (fqn63(lh)) {
       return compile(fqn(lh, rh));
     } else {
       var __lh3 = compile(lh);
-      var __e84;
+      var __e91;
       if (nil63(rh)) {
-        __e84 = "nil";
+        __e91 = "nil";
       } else {
-        __e84 = rh;
+        __e91 = rh;
       }
-      var __rh4 = compile(__e84);
+      var __rh4 = compile(__e91);
       return indentation() + __lh3 + " = " + __rh4;
     }
-  }, ["stmt"]: true});
-  setenv("get", {["_stash"]: true, ["special"]: (t, k) => {
+  }, {["_stash"]: true, ["stmt"]: true});
+  setenv37("get", "special", (t, k) => {
     var __t11 = compile(t);
-    var __k111 = compile(k);
+    var __k121 = compile(k);
     if (infixOperator63(t)) {
       __t11 = "(" + __t11 + ")";
     }
     if (stringLiteral63(k) && validId63(inner(k))) {
       return __t11 + "." + inner(k);
     } else {
-      return __t11 + "[" + __k111 + "]";
+      return __t11 + "[" + __k121 + "]";
     }
-  }});
-  setenv("%array", {["_stash"]: true, ["special"]: (...forms) => {
+  });
+  setenv37("%array", "special", (...forms) => {
     var __forms1 = unstash(forms);
     var __open = "[";
     var __close = "]";
     var __s7 = "";
     var __c7 = "";
     var ____o29 = __forms1;
-    var __k40 = undefined;
-    for (__k40 in ____o29) {
-      var __v30 = ____o29[__k40];
-      var __e85;
-      if (numeric63(__k40)) {
-        __e85 = parseInt(__k40);
+    var __k42 = undefined;
+    for (__k42 in ____o29) {
+      var __v30 = ____o29[__k42];
+      var __e92;
+      if (numeric63(__k42)) {
+        __e92 = parseInt(__k42);
       } else {
-        __e85 = __k40;
+        __e92 = __k42;
       }
-      var __k41 = __e85;
-      if (number63(__k41)) {
+      var __k43 = __e92;
+      if (number63(__k43)) {
         __s7 = __s7 + __c7 + compile(__v30);
         __c7 = ", ";
       }
     }
     return __open + __s7 + __close;
-  }});
-  setenv("%object", {["_stash"]: true, ["special"]: (...forms) => {
+  });
+  setenv37("%object", "special", (...forms) => {
     var __forms2 = unstash(forms);
     var __s8 = "{";
     var __c8 = "";
     var __sep = ": ";
-    var ____x102 = pair(__forms2);
+    var ____x105 = pair(__forms2);
     var ____i57 = 0;
-    while (____i57 < _35(____x102)) {
-      var ____id93 = ____x102[____i57];
-      var __k42 = ____id93[0];
-      var __v31 = ____id93[1];
-      __s8 = __s8 + __c8 + key(__k42) + __sep + compile(__v31);
+    while (____i57 < _35(____x105)) {
+      var ____id95 = ____x105[____i57];
+      var __k44 = ____id95[0];
+      var __v31 = ____id95[1];
+      __s8 = __s8 + __c8 + key(__k44) + __sep + compile(__v31);
       __c8 = ", ";
       ____i57 = ____i57 + 1;
     }
     return __s8 + "}";
-  }});
-  setenv("%table", {["_stash"]: true, ["special"]: (...forms) => {
+  });
+  setenv37("%table", "special", (...forms) => {
     var __forms3 = unstash(forms);
     var __s9 = "{\n";
     var __c9 = "";
@@ -4647,117 +5037,117 @@ var create = (globals) => {
     var __comma = either(__forms3.comma, escape(", "));
     indentLevel = indentLevel + 1;
     var __ind8 = indentation();
-    var ____x104 = __forms3;
+    var ____x107 = __forms3;
     var ____i58 = 0;
-    while (____i58 < _35(____x104)) {
-      var __x105 = ____x104[____i58];
-      if (atom63(__x105)) {
-        __s9 = __s9 + __c9 + __ind8 + key(__x105) + __sep1 + compile(__x105);
+    while (____i58 < _35(____x107)) {
+      var __x108 = ____x107[____i58];
+      if (atom63(__x108)) {
+        __s9 = __s9 + __c9 + __ind8 + key(__x108) + __sep1 + compile(__x108);
       } else {
-        if (_35(__x105) <= 2) {
-          var ____id94 = __x105;
-          var __name20 = ____id94[0];
-          var __v32 = ____id94[1];
-          __s9 = __s9 + __c9 + __ind8 + key(__name20) + __sep1 + compile(__v32);
+        if (_35(__x108) <= 2) {
+          var ____id96 = __x108;
+          var __name21 = ____id96[0];
+          var __v32 = ____id96[1];
+          __s9 = __s9 + __c9 + __ind8 + key(__name21) + __sep1 + compile(__v32);
         } else {
-          var ____id95 = __x105;
-          var __prefix4 = ____id95[0];
-          var __name21 = ____id95[1];
-          var __args30 = ____id95[2];
-          var __body52 = cut(____id95, 3);
-          var __e86;
-          if (in63(__prefix4, ["define", "def"])) {
-            __e86 = "";
+          var ____id97 = __x108;
+          var __prefix4 = ____id97[0];
+          var __name22 = ____id97[1];
+          var __args29 = ____id97[2];
+          var __body52 = cut(____id97, 3);
+          var __e93;
+          if (in63((_G.Namespace.find("dax.compiler").intern("name").deref())(__prefix4), ["define", "def"])) {
+            __e93 = "";
           } else {
-            __e86 = __prefix4;
+            __e93 = __prefix4;
           }
-          var __prefix5 = __e86;
-          var __e87;
+          var __prefix5 = __e93;
+          var __e94;
           if (some63(__body52)) {
-            __e87 = compileFunction(__args30, join(["do"], __body52), {["_stash"]: true, ["name"]: key(__name21), ["prefix"]: __prefix5});
+            __e94 = compileFunction(__args29, join(["do"], __body52), {["_stash"]: true, ["name"]: key(__name22), ["prefix"]: __prefix5});
           } else {
-            __e87 = key(__name21) + __sep1 + compile(__args30);
+            __e94 = key(__name22) + __sep1 + compile(__args29);
           }
-          var __h3 = __e87;
+          var __h3 = __e94;
           __s9 = __s9 + __c9 + __ind8 + __h3;
         }
       }
       __c9 = inner(__comma) + "\n";
       ____i58 = ____i58 + 1;
     }
-    var ____x103;
+    var ____x106;
     indentLevel = indentLevel - 1;
     return __s9 + "\n" + indentation() + "}";
-  }});
-  setenv("%class", {["_stash"]: true, ["special"]: (name, ...__r711) => {
-    var ____r711 = unstash(__r711);
-    var __name22 = destash33(name, ____r711);
-    var ____id96 = ____r711;
-    var __body53 = cut(____id96, 0);
-    var __e88;
-    if (atom63(__name22)) {
-      __e88 = [__name22];
+  });
+  setenv37("%class", "special", (name, ...__r763) => {
+    var ____r763 = unstash(__r763);
+    var __name23 = destash33(name, ____r763);
+    var ____id98 = ____r763;
+    var __body53 = cut(____id98, 0);
+    var __e95;
+    if (atom63(__name23)) {
+      __e95 = [__name23];
     } else {
-      __e88 = __name22;
+      __e95 = __name23;
     }
-    var ____id97 = __e88;
-    var __name23 = ____id97[0];
-    var __parent2 = ____id97[1];
-    var __e89;
-    if (__name23) {
-      __e89 = [__name23, "\" \""];
+    var ____id99 = __e95;
+    var __name24 = ____id99[0];
+    var __parent2 = ____id99[1];
+    var __e96;
+    if (__name24) {
+      __e96 = [__name24, "\" \""];
     } else {
-      __e89 = [];
+      __e96 = [];
     }
-    var __name24 = __e89;
-    var __e90;
+    var __name25 = __e96;
+    var __e97;
     if (__parent2) {
-      __e90 = ["\"extends \"", __parent2, "\" \""];
+      __e97 = ["\"extends \"", __parent2, "\" \""];
     } else {
-      __e90 = [];
+      __e97 = [];
     }
-    var __ext = __e90;
-    return compile(join(["%literal", "\"class \""], __name24, __ext, [join({[0]: "%table", ["comma"]: "\"\""}, __body53)]));
-  }});
-  setenv("%literal", {["_stash"]: true, ["special"]: (...args) => {
-    var __args31 = unstash(args);
+    var __ext = __e97;
+    return compile(join(["%literal", "\"class \""], __name25, __ext, [join({[0]: "%table", ["comma"]: "\"\""}, __body53)]));
+  });
+  setenv37("%literal", "special", (...args) => {
+    var __args30 = unstash(args);
     var __s10 = "";
-    var ____x106 = __args31;
+    var ____x109 = __args30;
     var ____i59 = 0;
-    while (____i59 < _35(____x106)) {
-      var __x107 = ____x106[____i59];
-      if (stringLiteral63(__x107)) {
-        __s10 = __s10 + _eval(__x107);
+    while (____i59 < _35(____x109)) {
+      var __x110 = ____x109[____i59];
+      if (stringLiteral63(__x110)) {
+        __s10 = __s10 + _eval(__x110);
       } else {
-        __s10 = __s10 + compile(__x107);
+        __s10 = __s10 + compile(__x110);
       }
       ____i59 = ____i59 + 1;
     }
     return __s10;
-  }});
-  setenv("%statement", {["_stash"]: true, ["special"]: (...args) => {
-    var __args32 = unstash(args);
+  });
+  setenv37("%statement", "special", (...args) => {
+    var __args31 = unstash(args);
     var __s111 = indentation();
-    var ____x108 = __args32;
+    var ____x1111 = __args31;
     var ____i60 = 0;
-    while (____i60 < _35(____x108)) {
-      var __x109 = ____x108[____i60];
-      if (stringLiteral63(__x109)) {
-        __s111 = __s111 + _eval(__x109);
+    while (____i60 < _35(____x1111)) {
+      var __x112 = ____x1111[____i60];
+      if (stringLiteral63(__x112)) {
+        __s111 = __s111 + _eval(__x112);
       } else {
-        __s111 = __s111 + compile(__x109);
+        __s111 = __s111 + compile(__x112);
       }
       ____i60 = ____i60 + 1;
     }
     __s111 = __s111 + "\n";
     return __s111;
-  }, ["stmt"]: true, ["tr"]: true});
-  setenv("%indentation", {["_stash"]: true, ["special"]: () => {
+  }, {["_stash"]: true, ["stmt"]: true, ["tr"]: true});
+  setenv37("%indentation", "special", () => {
     return indentation();
-  }});
-  setenv("%spread", {["_stash"]: true, ["special"]: (x) => {
+  });
+  setenv37("%spread", "special", (x) => {
     return "..." + compile(x);
-  }});
+  });
   __exports.context = context;
   __exports.sandbox = sandbox;
   __exports.run = run;
@@ -4768,9 +5158,9 @@ var create = (globals) => {
   var __exports1 = {};
   var __self1 = __exports1;
   var __module1 = {["exports"]: __exports1};
-  _G._42ns42("dax.reader");
+  _G.currentNs("dax.reader");
   delimiters = {["{"]: true, ["}"]: true, ["["]: true, ["]"]: true, ["("]: true, [")"]: true, [";"]: true, ["\r"]: true, ["\n"]: true};
-  _G._42ns42().intern("delimiters").bindRoot(delimiters, () => {
+  currentNs().intern("delimiters").bindRoot(delimiters, () => {
     return delimiters;
   }, (x) => {
     delimiters = x;
@@ -4778,7 +5168,7 @@ var create = (globals) => {
   });
   _G.delimiters = delimiters;
   whitespace = {[" "]: true, ["\t"]: true, ["\r"]: true, ["\n"]: true};
-  _G._42ns42().intern("whitespace").bindRoot(whitespace, () => {
+  currentNs().intern("whitespace").bindRoot(whitespace, () => {
     return whitespace;
   }, (x) => {
     whitespace = x;
@@ -4792,7 +5182,7 @@ var create = (globals) => {
     }
     return __s121;
   };
-  _G._42ns42().intern("stream").bindRoot(stream, () => {
+  currentNs().intern("stream").bindRoot(stream, () => {
     return stream;
   }, (x) => {
     stream = x;
@@ -4804,7 +5194,7 @@ var create = (globals) => {
       return char(s.string, s.pos);
     }
   };
-  _G._42ns42().intern("peek-char").bindRoot(peekChar, () => {
+  currentNs().intern("peek-char").bindRoot(peekChar, () => {
     return peekChar;
   }, (x) => {
     peekChar = x;
@@ -4818,7 +5208,7 @@ var create = (globals) => {
       return __c10;
     }
   };
-  _G._42ns42().intern("read-char").bindRoot(readChar, () => {
+  currentNs().intern("read-char").bindRoot(readChar, () => {
     return readChar;
   }, (x) => {
     readChar = x;
@@ -4846,7 +5236,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("skip-non-code").bindRoot(skipNonCode, () => {
+  currentNs().intern("skip-non-code").bindRoot(skipNonCode, () => {
     return skipNonCode;
   }, (x) => {
     skipNonCode = x;
@@ -4854,7 +5244,7 @@ var create = (globals) => {
   });
   _G.skipNonCode = skipNonCode;
   readTable = {};
-  _G._42ns42().intern("read-table").bindRoot(readTable, () => {
+  currentNs().intern("read-table").bindRoot(readTable, () => {
     return readTable;
   }, (x) => {
     readTable = x;
@@ -4862,7 +5252,7 @@ var create = (globals) => {
   });
   _G.readTable = readTable;
   eof = {};
-  _G._42ns42().intern("eof").bindRoot(eof, () => {
+  currentNs().intern("eof").bindRoot(eof, () => {
     return eof;
   }, (x) => {
     eof = x;
@@ -4878,7 +5268,7 @@ var create = (globals) => {
       return eof;
     }
   };
-  _G._42ns42().intern("read").bindRoot(read, () => {
+  currentNs().intern("read").bindRoot(read, () => {
     return read;
   }, (x) => {
     read = x;
@@ -4886,17 +5276,17 @@ var create = (globals) => {
   });
   _G.read = read;
   var readAll = (s) => {
-    var __l9 = [];
+    var __l111 = [];
     while (true) {
       var __form10 = read(s);
       if (__form10 === eof) {
         break;
       }
-      add(__l9, __form10);
+      add(__l111, __form10);
     }
-    return __l9;
+    return __l111;
   };
-  _G._42ns42().intern("read-all").bindRoot(readAll, () => {
+  currentNs().intern("read-all").bindRoot(readAll, () => {
     return readAll;
   }, (x) => {
     readAll = x;
@@ -4904,12 +5294,12 @@ var create = (globals) => {
   });
   _G.readAll = readAll;
   var readString = (str, more) => {
-    var __x110 = read(stream(str, more));
-    if (!( __x110 === eof)) {
-      return __x110;
+    var __x113 = read(stream(str, more));
+    if (!( __x113 === eof)) {
+      return __x113;
     }
   };
-  _G._42ns42().intern("read-string").bindRoot(readString, () => {
+  currentNs().intern("read-string").bindRoot(readString, () => {
     return readString;
   }, (x) => {
     readString = x;
@@ -4919,27 +5309,27 @@ var create = (globals) => {
   var key63 = (atom) => {
     return string63(atom) && _35(atom) > 1 && char(atom, edge(atom)) === ":";
   };
-  _G._42ns42().intern("key?").bindRoot(key63, () => {
+  currentNs().intern("key?").bindRoot(key63, () => {
     return key63;
   }, (x) => {
     key63 = x;
     return key63;
   });
   var expected = (s, c) => {
-    var ____id99 = s;
-    var __more = ____id99["more"];
-    var __pos = ____id99["pos"];
-    var __id100 = __more;
-    var __e91;
-    if (__id100) {
-      __e91 = __id100;
+    var ____id101 = s;
+    var __more = ____id101["more"];
+    var __pos = ____id101["pos"];
+    var __id102 = __more;
+    var __e98;
+    if (__id102) {
+      __e98 = __id102;
     } else {
       throw new Error("Expected " + c + " at " + __pos);
-      __e91 = undefined;
+      __e98 = undefined;
     }
-    return __e91;
+    return __e98;
   };
-  _G._42ns42().intern("expected").bindRoot(expected, () => {
+  currentNs().intern("expected").bindRoot(expected, () => {
     return expected;
   }, (x) => {
     expected = x;
@@ -4954,7 +5344,7 @@ var create = (globals) => {
       return [x, __y6];
     }
   };
-  _G._42ns42().intern("wrap").bindRoot(wrap, () => {
+  currentNs().intern("wrap").bindRoot(wrap, () => {
     return wrap;
   }, (x) => {
     wrap = x;
@@ -4962,25 +5352,25 @@ var create = (globals) => {
   });
   _G.wrap = wrap;
   var hexPrefix63 = (str) => {
-    var __e92;
+    var __e99;
     if (code(str, 0) === 45) {
-      __e92 = 1;
+      __e99 = 1;
     } else {
-      __e92 = 0;
+      __e99 = 0;
     }
-    var __i61 = __e92;
-    var __id101 = code(str, __i61) === 48;
-    var __e93;
-    if (__id101) {
+    var __i61 = __e99;
+    var __id103 = code(str, __i61) === 48;
+    var __e100;
+    if (__id103) {
       __i61 = __i61 + 1;
       var __n38 = code(str, __i61);
-      __e93 = __n38 === 120 || __n38 === 88;
+      __e100 = __n38 === 120 || __n38 === 88;
     } else {
-      __e93 = __id101;
+      __e100 = __id103;
     }
-    return __e93;
+    return __e100;
   };
-  _G._42ns42().intern("hex-prefix?").bindRoot(hexPrefix63, () => {
+  currentNs().intern("hex-prefix?").bindRoot(hexPrefix63, () => {
     return hexPrefix63;
   }, (x) => {
     hexPrefix63 = x;
@@ -4996,7 +5386,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("maybe-number").bindRoot(maybeNumber, () => {
+  currentNs().intern("maybe-number").bindRoot(maybeNumber, () => {
     return maybeNumber;
   }, (x) => {
     maybeNumber = x;
@@ -5006,7 +5396,7 @@ var create = (globals) => {
   var real63 = (x) => {
     return number63(x) && ! nan63(x) && ! inf63(x);
   };
-  _G._42ns42().intern("real?").bindRoot(real63, () => {
+  currentNs().intern("real?").bindRoot(real63, () => {
     return real63;
   }, (x) => {
     real63 = x;
@@ -5036,100 +5426,110 @@ var create = (globals) => {
         if (real63(__n39)) {
           return __n39;
         } else {
-          return __str1;
+          return Namespace.sym(__str1);
         }
       }
     }
   };
   readTable["("] = (s) => {
+    var __r815 = undefined;
+    var __l121 = [];
+    var __mt = {["start"]: s.pos};
+    meta33(__l121, __mt);
     readChar(s);
-    var __r763 = undefined;
-    var __l10 = [];
-    while (nil63(__r763)) {
+    while (nil63(__r815)) {
       skipNonCode(s);
       var __c14 = peekChar(s);
       if (__c14 === ")") {
         readChar(s);
-        __r763 = __l10;
+        __r815 = __l121;
       } else {
         if (nil63(__c14)) {
-          __r763 = expected(s, ")");
+          __r815 = expected(s, ")");
         } else {
-          var __x1111 = read(s);
-          if (key63(__x1111)) {
-            var __k43 = clip(__x1111, 0, edge(__x1111));
-            var __v33 = read(s);
-            __l10[__k43] = __v33;
+          var __x114 = read(s);
+          var __e101;
+          if (sym63(__x114)) {
+            __e101 = "" + __x114;
           } else {
-            add(__l10, __x1111);
+            __e101 = __x114;
+          }
+          var __x121 = __e101;
+          if (key63(__x121)) {
+            var __k45 = clip(__x121, 0, edge(__x121));
+            var __v33 = read(s);
+            __l121[__k45] = __v33;
+          } else {
+            add(__l121, __x114);
           }
         }
       }
     }
-    return __r763;
+    __mt.stop = s.pos;
+    return __r815;
   };
   readTable[")"] = (s) => {
     throw new Error("Unexpected ) at " + s.pos);
   };
   readTable["["] = (s) => {
     readChar(s);
-    var __r766 = undefined;
-    var __l111 = [];
-    while (nil63(__r766)) {
+    var __r818 = undefined;
+    var __l13 = [];
+    while (nil63(__r818)) {
       skipNonCode(s);
       var __c15 = peekChar(s);
       if (__c15 === "]") {
         readChar(s);
-        __r766 = join(["brackets"], __l111);
+        __r818 = join(["brackets"], __l13);
       } else {
         if (nil63(__c15)) {
-          __r766 = expected(s, "]");
+          __r818 = expected(s, "]");
         } else {
-          var __x112 = read(s);
-          add(__l111, __x112);
+          var __x115 = read(s);
+          add(__l13, __x115);
         }
       }
     }
-    return __r766;
+    return __r818;
   };
   readTable["]"] = (s) => {
     throw new Error("Unexpected ] at " + s.pos);
   };
   readTable["{"] = (s) => {
     readChar(s);
-    var __r769 = undefined;
-    var __l121 = [];
-    while (nil63(__r769)) {
+    var __r821 = undefined;
+    var __l14 = [];
+    while (nil63(__r821)) {
       skipNonCode(s);
       var __c16 = peekChar(s);
       if (__c16 === "}") {
         readChar(s);
-        __r769 = join(["braces"], __l121);
+        __r821 = join(["braces"], __l14);
       } else {
         if (nil63(__c16)) {
-          __r769 = expected(s, "}");
+          __r821 = expected(s, "}");
         } else {
-          var __x113 = read(s);
-          add(__l121, __x113);
+          var __x116 = read(s);
+          add(__l14, __x116);
         }
       }
     }
-    return __r769;
+    return __r821;
   };
   readTable["}"] = (s) => {
     throw new Error("Unexpected } at " + s.pos);
   };
   readTable["\""] = (s) => {
     readChar(s);
-    var __r772 = undefined;
+    var __r824 = undefined;
     var __str2 = "\"";
-    while (nil63(__r772)) {
+    while (nil63(__r824)) {
       var __c17 = peekChar(s);
       if (__c17 === "\"") {
-        __r772 = __str2 + readChar(s);
+        __r824 = __str2 + readChar(s);
       } else {
         if (nil63(__c17)) {
-          __r772 = expected(s, "\"");
+          __r824 = expected(s, "\"");
         } else {
           if (__c17 === "\\") {
             __str2 = __str2 + readChar(s);
@@ -5138,25 +5538,25 @@ var create = (globals) => {
         }
       }
     }
-    return __r772;
+    return __r824;
   };
   readTable["|"] = (s) => {
     readChar(s);
-    var __r774 = undefined;
+    var __r826 = undefined;
     var __str3 = "|";
-    while (nil63(__r774)) {
+    while (nil63(__r826)) {
       var __c18 = peekChar(s);
       if (__c18 === "|") {
-        __r774 = __str3 + readChar(s);
+        __r826 = __str3 + readChar(s);
       } else {
         if (nil63(__c18)) {
-          __r774 = expected(s, "|");
+          __r826 = expected(s, "|");
         } else {
           __str3 = __str3 + readChar(s);
         }
       }
     }
-    return __r774;
+    return __r826;
   };
   readTable["'"] = (s) => {
     readChar(s);
@@ -5178,13 +5578,13 @@ var create = (globals) => {
   readTable["?"] = (s) => {
     readChar(s);
     var __c19 = readChar(s);
-    var __e94;
+    var __e102;
     if (__c19 === "\\") {
-      __e94 = readChar(s);
+      __e102 = readChar(s);
     } else {
-      __e94 = __c19;
+      __e102 = __c19;
     }
-    var __c131 = __e94;
+    var __c131 = __e102;
     return code(__c131);
   };
   readTable["#"] = (s) => {
@@ -5207,50 +5607,50 @@ var create = (globals) => {
   var __exports2 = {};
   var __self2 = __exports2;
   var __module2 = {["exports"]: __exports2};
-  _G._42ns42("dax.system");
+  _G.currentNs("dax.system");
   var fs = require("fs");
-  _G._42ns42().intern("fs").bindRoot(fs, () => {
+  currentNs().intern("fs").bindRoot(fs, () => {
     return fs;
   }, (x) => {
     fs = x;
     return fs;
   });
   var childProcess = require("child_process");
-  _G._42ns42().intern("child-process").bindRoot(childProcess, () => {
+  currentNs().intern("child-process").bindRoot(childProcess, () => {
     return childProcess;
   }, (x) => {
     childProcess = x;
     return childProcess;
   });
   var path = require("path");
-  _G._42ns42().intern("path").bindRoot(path, () => {
+  currentNs().intern("path").bindRoot(path, () => {
     return path;
   }, (x) => {
     path = x;
     return path;
   });
   var process = require("process");
-  _G._42ns42().intern("process").bindRoot(process, () => {
+  currentNs().intern("process").bindRoot(process, () => {
     return process;
   }, (x) => {
     process = x;
     return process;
   });
-  var readFile = (path, __x114) => {
-    var __e95;
-    if (is63(__x114)) {
-      __e95 = __x114;
+  var readFile = (path, __x117) => {
+    var __e103;
+    if (is63(__x117)) {
+      __e103 = __x117;
     } else {
-      __e95 = "text";
+      __e103 = "text";
     }
-    var __mode = __e95;
+    var __mode = __e103;
     if (__mode === "text") {
       return fs.readFileSync(path, "utf8").replace(/\r/g, "");
     } else {
       return fs.readFileSync(path);
     }
   };
-  _G._42ns42().intern("read-file").bindRoot(readFile, () => {
+  currentNs().intern("read-file").bindRoot(readFile, () => {
     return readFile;
   }, (x) => {
     readFile = x;
@@ -5259,7 +5659,7 @@ var create = (globals) => {
   var writeFile = (path, data) => {
     return fs.writeFileSync(path, data, "utf8");
   };
-  _G._42ns42().intern("write-file").bindRoot(writeFile, () => {
+  currentNs().intern("write-file").bindRoot(writeFile, () => {
     return writeFile;
   }, (x) => {
     writeFile = x;
@@ -5268,7 +5668,7 @@ var create = (globals) => {
   var fileExists63 = (path) => {
     return fs.existsSync(path, "utf8") && fs.statSync(path).isFile();
   };
-  _G._42ns42().intern("file-exists?").bindRoot(fileExists63, () => {
+  currentNs().intern("file-exists?").bindRoot(fileExists63, () => {
     return fileExists63;
   }, (x) => {
     fileExists63 = x;
@@ -5277,14 +5677,14 @@ var create = (globals) => {
   var directoryExists63 = (path) => {
     return fs.existsSync(path, "utf8") && fs.statSync(path).isDirectory();
   };
-  _G._42ns42().intern("directory-exists?").bindRoot(directoryExists63, () => {
+  currentNs().intern("directory-exists?").bindRoot(directoryExists63, () => {
     return directoryExists63;
   }, (x) => {
     directoryExists63 = x;
     return directoryExists63;
   });
   var pathSeparator = path.sep;
-  _G._42ns42().intern("path-separator").bindRoot(pathSeparator, () => {
+  currentNs().intern("path-separator").bindRoot(pathSeparator, () => {
     return pathSeparator;
   }, (x) => {
     pathSeparator = x;
@@ -5296,7 +5696,7 @@ var create = (globals) => {
       return x + pathSeparator + y;
     }, __parts) || "";
   };
-  _G._42ns42().intern("path-join").bindRoot(pathJoin, () => {
+  currentNs().intern("path-join").bindRoot(pathJoin, () => {
     return pathJoin;
   }, (x) => {
     pathJoin = x;
@@ -5305,7 +5705,7 @@ var create = (globals) => {
   var getEnvironmentVariable = (name) => {
     return process.env[name];
   };
-  _G._42ns42().intern("get-environment-variable").bindRoot(getEnvironmentVariable, () => {
+  currentNs().intern("get-environment-variable").bindRoot(getEnvironmentVariable, () => {
     return getEnvironmentVariable;
   }, (x) => {
     getEnvironmentVariable = x;
@@ -5315,7 +5715,7 @@ var create = (globals) => {
     process.env[name] = value;
     return process.env[name];
   };
-  _G._42ns42().intern("set-environment-variable").bindRoot(setEnvironmentVariable, () => {
+  currentNs().intern("set-environment-variable").bindRoot(setEnvironmentVariable, () => {
     return setEnvironmentVariable;
   }, (x) => {
     setEnvironmentVariable = x;
@@ -5325,7 +5725,7 @@ var create = (globals) => {
     var __out = process.stdout;
     return __out.write(x, cb);
   };
-  _G._42ns42().intern("write").bindRoot(write, () => {
+  currentNs().intern("write").bindRoot(write, () => {
     return write;
   }, (x) => {
     write = x;
@@ -5334,14 +5734,14 @@ var create = (globals) => {
   var exit = (code) => {
     return process.exit(code);
   };
-  _G._42ns42().intern("exit").bindRoot(exit, () => {
+  currentNs().intern("exit").bindRoot(exit, () => {
     return exit;
   }, (x) => {
     exit = x;
     return exit;
   });
   var argv = cut(process.argv, 2);
-  _G._42ns42().intern("argv").bindRoot(argv, () => {
+  currentNs().intern("argv").bindRoot(argv, () => {
     return argv;
   }, (x) => {
     argv = x;
@@ -5351,7 +5751,7 @@ var create = (globals) => {
     delete require.cache[require.resolve(module)];
     return require(module);
   };
-  _G._42ns42().intern("reload").bindRoot(reload, () => {
+  currentNs().intern("reload").bindRoot(reload, () => {
     return reload;
   }, (x) => {
     reload = x;
@@ -5360,7 +5760,7 @@ var create = (globals) => {
   var shell = (command) => {
     return childProcess.execSync(command).toString();
   };
-  _G._42ns42().intern("shell").bindRoot(shell, () => {
+  currentNs().intern("shell").bindRoot(shell, () => {
     return shell;
   }, (x) => {
     shell = x;
@@ -5383,39 +5783,39 @@ var create = (globals) => {
   var __exports3 = {};
   var __self3 = __exports3;
   var __module3 = {["exports"]: __exports3};
-  _G._42ns42("dax.main");
+  _G.currentNs("dax.main");
   var reader = _G.reader;
-  _G._42ns42().intern("reader").bindRoot(reader, () => {
+  currentNs().intern("reader").bindRoot(reader, () => {
     return reader;
   }, (x) => {
     reader = x;
     return reader;
   });
   var compiler = _G.compiler;
-  _G._42ns42().intern("compiler").bindRoot(compiler, () => {
+  currentNs().intern("compiler").bindRoot(compiler, () => {
     return compiler;
   }, (x) => {
     compiler = x;
     return compiler;
   });
   var system = _G.system;
-  _G._42ns42().intern("system").bindRoot(system, () => {
+  currentNs().intern("system").bindRoot(system, () => {
     return system;
   }, (x) => {
     system = x;
     return system;
   });
   var evalPrint = (form) => {
-    var ____id102 = (() => {
+    var ____id104 = (() => {
       try {
         return [true, compiler["eval"](form)];
       }
-      catch (__e99) {
-        return [false, __e99];
+      catch (__e107) {
+        return [false, __e107];
       }
     })();
-    var __ok1 = ____id102[0];
-    var __v34 = ____id102[1];
+    var __ok1 = ____id104[0];
+    var __v34 = ____id104[1];
     if (! __ok1) {
       return print(__v34.stack);
     } else {
@@ -5424,7 +5824,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("eval-print").bindRoot(evalPrint, () => {
+  currentNs().intern("eval-print").bindRoot(evalPrint, () => {
     return evalPrint;
   }, (x) => {
     evalPrint = x;
@@ -5433,7 +5833,7 @@ var create = (globals) => {
   var rep = (s) => {
     return evalPrint(reader.readString(s));
   };
-  _G._42ns42().intern("rep").bindRoot(rep, () => {
+  currentNs().intern("rep").bindRoot(rep, () => {
     return rep;
   }, (x) => {
     rep = x;
@@ -5457,7 +5857,7 @@ var create = (globals) => {
     ___in.setEncoding("utf8");
     return ___in.on("data", rep1);
   };
-  _G._42ns42().intern("repl").bindRoot(repl, () => {
+  currentNs().intern("repl").bindRoot(repl, () => {
     return repl;
   }, (x) => {
     repl = x;
@@ -5471,18 +5871,18 @@ var create = (globals) => {
         return str(body);
       } else {
         var __s13 = "(";
-        var ____x115 = body;
+        var ____x118 = body;
         var ____i62 = 0;
-        while (____i62 < _35(____x115)) {
-          var __x116 = ____x115[____i62];
-          __s13 = __s13 + str(__x116) + "\n\n";
+        while (____i62 < _35(____x118)) {
+          var __x119 = ____x118[____i62];
+          __s13 = __s13 + str(__x119) + "\n\n";
           ____i62 = ____i62 + 1;
         }
         return __s13 + ")";
       }
     }
   };
-  _G._42ns42().intern("pp-to-string").bindRoot(ppToString, () => {
+  currentNs().intern("pp-to-string").bindRoot(ppToString, () => {
     return ppToString;
   }, (x) => {
     ppToString = x;
@@ -5493,7 +5893,7 @@ var create = (globals) => {
     print(ppToString(body));
     return body;
   };
-  _G._42ns42().intern("pp").bindRoot(pp, () => {
+  currentNs().intern("pp").bindRoot(pp, () => {
     return pp;
   }, (x) => {
     pp = x;
@@ -5509,7 +5909,7 @@ var create = (globals) => {
       return join(["do"], __body54);
     }
   };
-  _G._42ns42().intern("read-file").bindRoot(readFile, () => {
+  currentNs().intern("read-file").bindRoot(readFile, () => {
     return readFile;
   }, (x) => {
     readFile = x;
@@ -5520,7 +5920,7 @@ var create = (globals) => {
     var __body55 = readFile(path);
     return compiler.expand(__body55);
   };
-  _G._42ns42().intern("expand-file").bindRoot(expandFile, () => {
+  currentNs().intern("expand-file").bindRoot(expandFile, () => {
     return expandFile;
   }, (x) => {
     expandFile = x;
@@ -5532,7 +5932,7 @@ var create = (globals) => {
     var __form12 = compiler.expand(join(["do"], __body56));
     return compiler.compile(__form12, {["_stash"]: true, ["stmt"]: true});
   };
-  _G._42ns42().intern("compile-file").bindRoot(compileFile, () => {
+  currentNs().intern("compile-file").bindRoot(compileFile, () => {
     return compileFile;
   }, (x) => {
     compileFile = x;
@@ -5543,12 +5943,12 @@ var create = (globals) => {
     var __code1 = compileFile(path);
     var __prev = _G.exports || {};
     _G.exports = {};
-    var __x117 = _G.exports;
+    var __x120 = _G.exports;
     compiler.run(__code1);
     _G.exports = __prev;
-    return __x117;
+    return __x120;
   };
-  _G._42ns42().intern("load").bindRoot(load, () => {
+  currentNs().intern("load").bindRoot(load, () => {
     return load;
   }, (x) => {
     load = x;
@@ -5558,7 +5958,7 @@ var create = (globals) => {
   var scriptFile63 = (path) => {
     return !( "-" === char(path, 0) || ".js" === clip(path, _35(path) - 3));
   };
-  _G._42ns42().intern("script-file?").bindRoot(scriptFile63, () => {
+  currentNs().intern("script-file?").bindRoot(scriptFile63, () => {
     return scriptFile63;
   }, (x) => {
     scriptFile63 = x;
@@ -5571,7 +5971,7 @@ var create = (globals) => {
       return compiler.run(system.readFile(path));
     }
   };
-  _G._42ns42().intern("run-file").bindRoot(runFile, () => {
+  currentNs().intern("run-file").bindRoot(runFile, () => {
     return runFile;
   }, (x) => {
     runFile = x;
@@ -5589,7 +5989,7 @@ var create = (globals) => {
     print(" -o <output>\tOutput file");
     return print(" -e <expr>\tExpression to evaluate");
   };
-  _G._42ns42().intern("usage").bindRoot(usage, () => {
+  currentNs().intern("usage").bindRoot(usage, () => {
     return usage;
   }, (x) => {
     usage = x;
@@ -5603,7 +6003,7 @@ var create = (globals) => {
       if (__arg === "-h" || __arg === "--help") {
         return usage();
       } else {
-        var __pre1 = [];
+        var __pre2 = [];
         var __op2 = undefined;
         var __input = undefined;
         var __output = undefined;
@@ -5617,24 +6017,24 @@ var create = (globals) => {
               print("missing argument for " + __a11);
             } else {
               __i63 = __i63 + 1;
-              var __val2 = __argv[__i63];
+              var __val3 = __argv[__i63];
               if (__a11 === "-c") {
-                __input = __val2;
+                __input = __val3;
                 __op2 = "compile";
               } else {
                 if (__a11 === "-x") {
-                  __input = __val2;
+                  __input = __val3;
                   __op2 = "expand";
                 } else {
                   if (__a11 === "-a") {
-                    __input = __val2;
+                    __input = __val3;
                     __op2 = "read";
                   } else {
                     if (__a11 === "-o") {
-                      __output = __val2;
+                      __output = __val3;
                     } else {
                       if (__a11 === "-e") {
-                        __expr6 = __val2;
+                        __expr6 = __val3;
                       }
                     }
                   }
@@ -5643,15 +6043,15 @@ var create = (globals) => {
             }
           } else {
             if (!( "-" === char(__a11, 0))) {
-              add(__pre1, __a11);
+              add(__pre2, __a11);
             }
           }
           __i63 = __i63 + 1;
         }
-        var ____x118 = __pre1;
+        var ____x1211 = __pre2;
         var ____i64 = 0;
-        while (____i64 < _35(____x118)) {
-          var __file = ____x118[____i64];
+        while (____i64 < _35(____x1211)) {
+          var __file = ____x1211[____i64];
           runFile(__file);
           ____i64 = ____i64 + 1;
         }
@@ -5662,19 +6062,19 @@ var create = (globals) => {
             return repl();
           }
         } else {
-          var __e96;
-          if (__op2 === "expand") {
-            __e96 = ppToString(expandFile(__input));
+          var __e104;
+          if (eq(__op2, "expand")) {
+            __e104 = ppToString(expandFile(__input));
           } else {
-            var __e97;
-            if (__op2 === "read") {
-              __e97 = ppToString(readFile(__input));
+            var __e105;
+            if (eq(__op2, "read")) {
+              __e105 = ppToString(readFile(__input));
             } else {
-              __e97 = compileFile(__input);
+              __e105 = compileFile(__input);
             }
-            __e96 = __e97;
+            __e104 = __e105;
           }
-          var __code2 = __e96;
+          var __code2 = __e104;
           if (nil63(__output) || __output === "-") {
             return print(__code2);
           } else {
@@ -5684,7 +6084,7 @@ var create = (globals) => {
       }
     }
   };
-  _G._42ns42().intern("main").bindRoot(main, () => {
+  currentNs().intern("main").bindRoot(main, () => {
     return main;
   }, (x) => {
     main = x;
@@ -5706,8 +6106,8 @@ var create = (globals) => {
   Object.assign(_G, _G.main);
   return _G;
 };
-var ____x119 = typeof(window);
-if ("undefined" === ____x119) {
+var ____x122 = typeof(window);
+if ("undefined" === ____x122) {
   module.exports.create = create;
 } else {
   if (true) {

@@ -39,9 +39,9 @@
 
 (define-macro case (expr rest: clauses)
   (let-unique (x)
-    (let (eq (fn (_) (if (= _ 'else) `true `(= ,_ ,x)))
+    (let (eq (fn (_) (if (eq _ 'else) `true `(= ,_ ,x)))
           cl (fn ((a rest: body))
-               (if (or (string? a) (number? a) (= (hd a) 'quote)) (list (eq a) `(do ,@body))
+               (if (or (string? a) (number? a) (eq (hd a) 'quote)) (list (eq a) `(do ,@body))
                    (one? a) (list (eq (hd a)) `(do ,@body))
                    (> (# a) 1) (list `(or ,@(map eq a)) `(do ,@body)))))
       `(let ,x ,expr
@@ -239,11 +239,11 @@
       (one? args) `(. this ,(hd args) ,@(tl args))
     (let ((name a rest: bs) args)
       (let (prop (if (atom? a) `',(compile a)
-                     (= 'quote (hd a)) `',(compile (at a 1))
+                     (eq (hd a) 'quote) `',(compile (at a 1))
                     a)
             expr `(,name [,prop]))
         (if (or (and (not (atom? a))
-                     (= 'quote (hd a)))
+                     (eq (hd a) 'quote))
                 (string-literal? a)
                 (none? bs))
             expr
@@ -259,8 +259,8 @@
                   body))
        ,@(map (fn (x)
                 (when (obj? x)
-                  (if (= (hd x) 'finally) x
-                      (= (hd x) 'catch)
+                  (if (eq (hd x) 'finally) x
+                      (eq (hd x) 'catch)
                     (let ((_ type var rest: body) x)
                       `(catch ,type (let (,var ,e) ,@body))))))
               body))))
