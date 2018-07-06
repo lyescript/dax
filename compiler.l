@@ -75,7 +75,7 @@
     (let-unique (id)
       (with bs (list id rh)
         (each (k v) lh
-          (let x (if (= k 'rest)
+          (let x (if (eq k 'rest)
                      `(cut ,id ,(# lh))
                    `(,id [',k]))
             (when (is? k)
@@ -118,7 +118,7 @@
 (define quasisplice? (x depth)
   (and (can-unquote? depth)
        (not (atom? x))
-       (= (hd x) 'unquote-splicing)))
+       (eq (hd x) 'unquote-splicing)))
 
 (define expand-local ((x name value))
   (setenv name variable: true)
@@ -149,7 +149,7 @@
   `(%condition-case ,var
      ,(macroexpand form)
      ,@(map (fn ((which rest: body))
-              (if (= which 'finally)
+              (if (eq which 'finally)
                   `(,which ,@(map macroexpand body))
                 (with-bindings ((list var))
                   `(,which ,@(map macroexpand body)))))
@@ -170,13 +170,13 @@
       (macroexpand (symbol-expansion form))
       (atom? form) form
     (let x (hd form)
-      (if (= x '%local) (expand-local form)
-          (= x '%function) (expand-function form)
-          (= x '%table) (expand-table form)
-          (= x '%class) (expand-class form)
-          (= x '%condition-case) (expand-condition-case form)
-          (= x '%global-function) (expand-definition form)
-          (= x '%local-function) (expand-definition form)
+      (if (eq x '%local) (expand-local form)
+          (eq x '%function) (expand-function form)
+          (eq x '%table) (expand-table form)
+          (eq x '%class) (expand-class form)
+          (eq x '%condition-case) (expand-condition-case form)
+          (eq x '%global-function) (expand-definition form)
+          (eq x '%local-function) (expand-definition form)
           (macro? x) (expand-macro form)
         (map macroexpand form)))))
 
@@ -199,31 +199,43 @@
     (let pruned
         (keep (fn (x)
                 (or (> (# x) 1)
-                    (not (= (hd x) 'list))
+                    (not (eq (hd x) 'list))
                     (keys? x)))
               xs)
       (if (one? pruned)
           (hd pruned)
         `(join ,@pruned)))))
 
+(define-global sym (ns name)
+  (if (is? (search name ".")) name
+      ns
+      (cat ns "/" name)
+    name))
+
+(define-global resolve (form (o pre (_G .ns-prefix)))
+  (if (string-literal? form) form
+      (accessor? form) form
+      (string? form) (sym pre form)
+    form))
+
 (define-global quasiexpand (form depth)
   (if (quasiquoting? depth)
-      (if (atom? form) (list 'quote form)
+      (if (atom? form) (list 'quote form) ;(list 'quote (resolve form))
           ;; unquote
           (and (can-unquote? depth)
-               (= (hd form) 'unquote))
+               (eq (hd form) 'unquote))
           (quasiexpand (at form 1))
           ;; decrease quasiquoting depth
-          (or (= (hd form) 'unquote)
-              (= (hd form) 'unquote-splicing))
+          (or (eq (hd form) 'unquote)
+              (eq (hd form) 'unquote-splicing))
           (quasiquote-list form (- depth 1))
           ;; increase quasiquoting depth
-          (= (hd form) 'quasiquote)
+          (eq (hd form) 'quasiquote)
           (quasiquote-list form (+ depth 1))
         (quasiquote-list form depth))
       (atom? form) form
-      (= (hd form) 'quote) form
-      (= (hd form) 'quasiquote)
+      (eq (hd form) 'quote) form
+      (eq (hd form) 'quasiquote)
       ;; start quasiquoting
       (quasiexpand (at form 1) 1)
     (map (fn (x) (quasiexpand x depth)) form)))
@@ -263,7 +275,7 @@
            (= (code x 0) ?.)
            (not (= (code x 1) ?.)))
       (and (obj? x)
-           (= (hd x) '%brackets))))
+           (eq (hd x) '%brackets))))
 
 (define-global camel-case-regex
   (new RegExp "(?<=[a-z])[-](\\w|$)" "g"))
@@ -274,26 +286,34 @@
             (fn (_ x) (x (.to-upper-case))))
     name))
 
-(define fqn? (x)
+(define-global fqn? (x)
   (and (string? x)
        (not (string-literal? x))
        (let i (search x "/")
          (and (is? i)
               (not (= i (edge x)))))))
 
-(define namespace (x)
+(define-global namespace (x)
   (when (fqn? x)
     (clip x 0 (search x "/"))))
 
-(define name (x)
+(define-global name (x)
   (if (fqn? x)
       (clip x (+ (search x "/") 1))
     x))
 
+(define-global eq (x y)
+  (if (fqn? y) (= x y)
+      (string-literal? y) (= x y)
+      (string? y) (= (name x) y)
+    (= x y)))
+
 (define fqn (id x)
+  (if (= (namespace id) 'js)
+      (name id)
   `(_G .Namespace .find ,(escape (namespace id))
        .intern ,(escape (name id))
-       (.deref ,x)))
+       (.deref ,x))))
 
 (define id (id raw?)
   (if (fqn? id)
@@ -333,10 +353,14 @@
   (if (and (string? k)
            (valid-id? k))
       k
-      (or (string-literal? k)
-          (not (string? k)))
-      (cat "[" (compile k) "]")
-    (compile k)))
+    (let k1 (compile k)
+      (if (and (string? k1)
+               (= (char k1 0) "["))
+          k1
+          (or (string-literal? k)
+              (not (string? k)))
+          (cat "[" k1 "]")
+    k1))))
 
 (define-global mapo (f t)
   (with o (list)
@@ -448,7 +472,7 @@
 
 (define parenthesize-call? (x)
   (or (and (not (atom? x))
-           (= (hd x) '%function))
+           (eq (hd x) '%function))
       (> (precedence x) 0)))
 
 (define-global compile-call (f args parens?)
@@ -489,7 +513,7 @@
 (define can-return? (form)
   (and (is? form)
        (or (atom? form)
-           (and (not (= (hd form) 'return))
+           (and (not (eq (hd form) 'return))
                 (not (statement? (hd form)))))))
 
 (define-global compile (form stmt: true)
@@ -518,16 +542,16 @@
 
 (define literal? (form)
   (or (atom? form)
-      (= (hd form) '%array)
-      (= (hd form) '%object)
-      (= (hd form) '%table)))
+      (eq (hd form) '%array)
+      (eq (hd form) '%object)
+      (eq (hd form) '%table)))
 
 (define standalone? (form)
   (or (and (not (atom? form))
            (not (infix? (hd form)))
            (not (literal? form))
-           (not (= 'get (hd form)))
-           (not (= '%statement (hd form)))
+           (not (eq 'get (hd form)))
+           (not (eq '%statement (hd form)))
            (not (and (two? form) (accessor? (at form 1)))))
       (id-literal? form)))
 
@@ -572,7 +596,7 @@
     (if (some? hoist1)
         (let-unique (id)
           (lower `(do (%local ,id ,a)
-                      ,(if (= x 'and)
+                      ,(if (eq x 'and)
                            `(%if ,id ,b ,id)
                          `(%if ,id ,id ,b)))
                  hoist))
@@ -586,7 +610,7 @@
     `(%condition-case ,var
        ,(lower-body `(do ,form) tail?)
        ,@(map (fn ((which rest: body))
-                (if (= which 'finally)
+                (if (eq which 'finally)
                     `(,which ,(lower-body body))
                   (let ((x rest: args) body)
                   `(,which ,(lower x) ,(lower-body args tail?)))))
@@ -596,7 +620,7 @@
       (add hoist `(%condition-case ,var
                     ,(lower `(%set ,e ,form))
                     ,@(map (fn ((which rest: body))
-                             (if (= which 'finally)
+                             (if (eq which 'finally)
                                  `(,which ,(lower-body body))
                                (let ((x rest: args) body)
                                  `(,which ,(lower x) ,(lower `(%set ,e (do ,@args)))))))
@@ -689,19 +713,19 @@
       (nil? hoist) (lower-statement form)
       (lower-infix? form) (lower-infix form hoist)
     (let ((x rest: args) form)
-      (if (= x 'do) (lower-do args hoist stmt? tail?)
-          (= x '%call) (lower args hoist stmt? tail?)
-          (= x '%set) (lower-set args hoist stmt? tail?)
-          (= x '%if) (lower-if args hoist stmt? tail?)
-          (= x '%try) (lower-try args hoist tail?)
-          (= x '%condition-case) (lower-condition-case args hoist stmt? tail?)
-          (= x 'while) (lower-while args hoist)
-          (= x '%for) (lower-for args hoist)
-          (= x '%table) (lower-table args hoist stmt? tail?)
-          (= x '%class) (lower-class args hoist stmt? tail?)
-          (= x '%function) (lower-function args)
-          (or (= x '%local-function)
-              (= x '%global-function))
+      (if (eq x 'do) (lower-do args hoist stmt? tail?)
+          (eq x '%call) (lower args hoist stmt? tail?)
+          (eq x '%set) (lower-set args hoist stmt? tail?)
+          (eq x '%if) (lower-if args hoist stmt? tail?)
+          (eq x '%try) (lower-try args hoist tail?)
+          (eq x '%condition-case) (lower-condition-case args hoist stmt? tail?)
+          (eq x 'while) (lower-while args hoist)
+          (eq x '%for) (lower-for args hoist)
+          (eq x '%table) (lower-table args hoist stmt? tail?)
+          (eq x '%class) (lower-class args hoist stmt? tail?)
+          (eq x '%function) (lower-function args)
+          (or (eq x '%local-function)
+              (eq x '%global-function))
           (lower-definition x args hoist)
           (in? x '(and or))
           (lower-short x args hoist)
@@ -727,7 +751,7 @@
     (run code)))
 
 (define-global immediate-call? (x)
-  (and (obj? x) (obj? (hd x)) (= (hd (hd x)) '%function)))
+  (and (obj? x) (obj? (hd x)) (eq (hd (hd x)) '%function)))
 
 (define-special %call (f rest: args)
   (compile-call f args))
@@ -740,8 +764,8 @@
     (step x forms
       (cat! s (compile x stmt: true))
       (unless (atom? x)
-        (if (or (= (hd x) 'return)
-                (= (hd x) 'break))
+        (if (or (eq (hd x) 'return)
+                (eq (hd x) 'break))
             (break))))))
 
 (define-special %if (cond cons alt) stmt: true tr: true
@@ -781,7 +805,7 @@
     (with str (cat ind "try {\n" body ind "}")
       (let form '()
         (step x clauses
-          (when (= (hd x) 'catch)
+          (when (eq (hd x) 'catch)
             (let ((_ type body) x)
               (add form (if (boolean? type) type `(instanceof ,e ,type)))
               (add form body))))
@@ -790,7 +814,7 @@
           (let (expr (hd (expand-if form))
                 h (with-indent (compile expr stmt: true)))
             (cat! str " catch (" e ") {\n" h ind "}"))))
-      (let clause (first (fn (x) (if (= (hd x) 'finally) x)) clauses)
+      (let clause (first (fn (x) (if (eq (hd x) 'finally) x)) clauses)
         (when clause
           (let (body (tl clause)
                 h (with-indent (compile `(do ,@body) stmt: true)))

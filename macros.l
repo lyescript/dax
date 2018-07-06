@@ -4,6 +4,7 @@
   `(_G (.*ns* ,@args)))
 
 (define-macro ns (name)
+  (set (_G .ns-prefix) name)
   `(current-ns ,(escape name)))
 
 (define-macro deref (ns name rest: args)
@@ -82,17 +83,20 @@
 (define-macro void body
   `(do ,@body (do)))
 
-(define-macro %setenv (name rest: keys)
-  `(void (setenv ',name ,@keys)))
+(define-macro %setenv (name kind rest: keys)
+  `(void
+     (setenv% ',name ',kind ,(get keys kind) ,@(with ks (cut keys) (wipe (get ks kind)) ks))
+     ;(setenv ',name ,@keys)))
+     ))
 
 (define-macro define-macro (name args rest: body)
-  `(%setenv ,name macro: (fn ,args ,@body)))
+  `(%setenv ,name macro macro: (fn ,args ,@body)))
 
 (define-macro define-special (name args rest: body)
-  `(%setenv ,name special: (fn ,args ,@body) ,@(keys body)))
+  `(%setenv ,name special special: (fn ,args ,@body) ,@(keys body)))
 
 (define-macro define-symbol-macro (name expansion)
-  `(%setenv ,name symbol: ',expansion))
+  `(%setenv ,name symbol symbol: ',expansion))
 
 (define-macro define-reader ((char s) rest: body)
   `(set (read-table [,char]) (fn (,s) ,@body)))
