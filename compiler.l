@@ -135,8 +135,9 @@
             (add expr `(,(macroexpand name) ,(macroexpand v))))
         (let ((prefix name args rest: body) x)
           (if (some? body)
-              (with-bindings (args)
-                (add expr `(,prefix ,(macroexpand name) ,args ,@(macroexpand body))))
+              (let ((args1 body1) (bind* args body))
+                (with-bindings (args1)
+                  (add expr `(,prefix ,(macroexpand name) ,args1 ,(macroexpand body1)))))
             (add expr `(,prefix ,(macroexpand name) ,(macroexpand args)))))))))
 
 (define expand-class ((x name rest: body))
