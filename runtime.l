@@ -173,7 +173,7 @@
   (l .sort (when f (fn (a b) (if (f a b) -1 1)))))
 
 (define-global map (f x)
-  (with t (fresh x)
+  (with t (fresh (if (string? x) (list) x))
     (step v x
       (let y (f v)
         (if (is? y)
@@ -334,12 +334,24 @@
         (set sp " "))
       (cat s  ")"))))
 
+(define-global string args
+  (with s ""
+    (step x args
+      (cat! s (if (number? x) (String .from-char-code x)
+                  (string? x) x
+                (str x))))))
+
 (define-global apply (f args)
   (let args (stash args)
     (f .apply f args)))
 
+(define-global indirect-function (f)
+  (while (string? f)
+    (set f (_G [(compile f)])))
+  f)
+
 (define-global call (f rest: args)
-  (apply f args))
+  (apply (indirect-function f) args))
 
 (define-global setenv (k rest: keys)
   (when (string? k)

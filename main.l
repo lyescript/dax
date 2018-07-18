@@ -1,6 +1,24 @@
 (define reader (_G .reader))
 (define compiler (_G .compiler))
 (define system (_G .system))
+(define path (require "path"))
+(define-global inquirer (require "inquirer"))
+(define-global BottomBar (inquirer .ui .BottomBar))
+(define-global bottom-bar nil)
+(inquirer .register-prompt "command" (require "inquirer-command-prompt"))
+(inquirer .register-prompt "command" (require "inquirer-fuzzy-path"))
+
+(define-global find-file-noselect (name)
+  (let filepath (path .resolve name)
+    (or (get-file-buffer filepath)
+        (with b (get-buffer-create filepath)
+          (with-current-buffer b
+            (set-visited-file-name filepath)
+            (insert (system .read-file filepath))
+            (goto-char 1))))))
+
+(define-global find-file (name)
+  (switch-to-buffer (find-file-noselect name)))
 
 (define eval-print (form)
   (let ((ok v) (guard (compiler .eval form)))
@@ -9,23 +27,41 @@
         (is? v) (print (str v)))))
 
 (define rep (s)
-  (eval-print (reader .read-string s)))
+  (eval-print (reader .read-string s (_G .eof) (_G .eos))))
 
-(define repl ()
-  (let buf ""
-    (define rep1 (s)
-      (cat! buf s)
-      (let (more (list)
-            form (reader .read-string buf more))
-          (unless (= form more)
-            (eval-print form)
-            (set buf "")
-            (system .write "> ")))))
+(define-global buf "")
+
+(define-global rep1 (s)
+  (cat! buf s)
+  (let (more (list)
+        eos (list)
+        form (reader .read-string buf more eos))
+    (unless (= form more)
+      (unless (= form eos)
+        (eval-print form))
+      (set buf "")
+      (system .write "> "))))
+
+(define-global repl ()
   (system .write "> ")
   (let in (process .stdin)
-    (in (.removeAllListeners))
+    (in (.remove-listener "data" rep1))
     (in .setEncoding "utf8")
     (in .on "data" rep1)))
+
+(define-global repl2 ()
+  (set (_G .bottom-bar) (new BottomBar bottomBar: "foo"))
+  (process .stdin .on "data" (fn (s) (_G .bottom-bar (.update-bottom-bar "")) nil))
+  (set-interval (fn () (_G .bottom-bar (.update-bottom-bar ""))) 300)
+  (inquirer .prompt (list (obj type: "fuzzypath" name: "path" pathFilter: (fn (isDirectory nodePath) isDirectory) rootPath: "." message: "Select path: " default: "node_modules" suggestOnly: false validate: (fn (x) (require "fs" .exists-sync x))))))
+
+(define-global prompt (args)
+  (process .stdin (.remove-listener "data" rep1))
+  (inquirer .prompt args
+            .then (fn (answers)
+                    (print (str answers))
+                    (set (_G .answers) answers)
+                    (repl))))
 
 (define-global pp-to-string (body)
   (if (atom? body) (str body)

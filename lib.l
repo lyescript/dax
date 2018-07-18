@@ -3,6 +3,7 @@
   (define _G (Object .assign (obj) (or globals (obj))))
   (set (_G ._G) _G)
   (set (_G .environment) (list (obj)))
+  (set (_G .caller) (%function prefix: function () (|arguments| .callee .caller)))
   (when-compiling
     (let expand-file (_G .expand-file)
       `(do

@@ -619,7 +619,7 @@
 
 (define lower-function (args)
   (let ((a rest: body) args)
-    `(%function ,a ,(lower-body body true))))
+    `(%function ,a ,(lower-body body true) ,@(keys body))))
 
 (define lower-definition (kind args hoist)
   (let ((name args rest: body) args)
@@ -777,8 +777,10 @@
 (define-special break () stmt: true
   (cat (indentation) "break"))
 
-(define-special %function (args body)
-  (compile-function args body infix: "=>"))
+(define-special %function (args body rest: props)
+  (unless (props .prefix)
+    (set (props .infix) (or (props .infix) "=>")))
+  (apply compile-function args body props))
 
 (define-special %global-function (name args body) stmt: true tr: true
   (compile `(%local ,name (%function ,args ,body)) stmt: true))
@@ -834,14 +836,16 @@
     (cat (indentation) lh " = " rh)))
 
 (define-special get (t k)
-  (let (t1 (compile t)
-        k1 (compile k))
-    (when (infix-operator? t)
-      (set t1 (cat "(" t1 ")")))
-    (if (and (string-literal? k)
-             (valid-id? (inner k)))
-        (cat t1 "." (inner k))
-      (cat t1 "[" k1 "]"))))
+  (if (accessor? k)
+      (compile `(,t ,k))
+    (let (t1 (compile t)
+          k1 (compile k))
+      (when (infix-operator? t)
+        (set t1 (cat "(" t1 ")")))
+      (if (and (string-literal? k)
+               (valid-id? (inner k)))
+          (cat t1 "." (inner k))
+        (cat t1 "[" k1 "]")))))
 
 (define-special %array forms
   (let (open "[" close "]"
