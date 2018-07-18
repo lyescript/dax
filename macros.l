@@ -115,14 +115,14 @@
 (define-macro let-macro (definitions rest: body)
   (with-frame
     (map (fn (m)
-           (eval `(define-macro ,@m)))
+           (_G .compiler .eval `(define-macro ,@m)))
          definitions)
     `(do ,@(macroexpand body))))
 
 (define-macro let-symbol (expansions rest: body)
   (with-frame
     (map (fn ((name exp))
-           (eval `(define-symbol-macro ,name ,exp)))
+           (_G .compiler .eval `(define-symbol-macro ,name ,exp)))
          (pair expansions))
     `(do ,@(macroexpand body))))
 
@@ -200,16 +200,20 @@
               names)))
 
 (define-macro when-compiling body
-  (eval `(do ,@body)))
+  (_G .compiler .eval `(do ,@body)))
 
 (define-macro during-compilation body
   (with x (expand `(do ,@body))
-    (eval x)))
+    (_G .compiler .eval x)))
 
 (define-macro class (x rest: body)
-  (if (atom? x)
-      `(%class (,x) ,@body)
-    `(%class ,x ,@body)))
+  (when (atom? x)
+    (set x (list x)))
+  (when (= (hd body) 'extends)
+    (let ((extends type rest: body1) body)
+      (add x type)
+      (set body body1)))
+  `(%class ,x ,@body))
 
 (define-macro . args
   (if (none? args) `(this .constructor)

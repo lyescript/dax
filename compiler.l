@@ -240,7 +240,7 @@
   (set-of "=" "==" "+" "-" "%" "*" "/" "<" ">" "<=" ">="
           ;; js
           "break" "case" "catch" "class" "const" "continue"
-          "debugger" "default" "delete" "do" "else" "eval"
+          "debugger" "default" "delete" "do" "else"
           "export" "extends" "finally" "for" "function" "if"
           "import" "in" "instanceof" "new" "return" "switch"
           "throw" "try" "typeof" "var" "void" "while" "with"))
@@ -271,7 +271,7 @@
             (fn (_ x) (x (.to-upper-case))))
     name))
 
-(define id (id raw?)
+(define-global symbol-name (id raw?)
   (let (id (camel-case id)
         id1 (if (and (not raw?) (number-code? (code id 0))) "_" ""))
     (for i (# id)
@@ -289,12 +289,12 @@
         id1)))
 
 (define-global valid-id? (x)
-  (and (some? x) (= x (id x))))
+  (and (some? x) (= x (symbol-name x))))
 
 (let (names (obj))
   (define-global unique (x)
     (if (string? x)
-        (let x (id x)
+        (let x (symbol-name x)
           (if (names [x])
               (let i (names [x])
                 (inc (names [x]))
@@ -403,7 +403,7 @@
       (accessor? x) (accessor x)
       (id-literal? x) (inner x)
       (string-literal? x) (escape-newlines x)
-      (string? x) (id x raw?)
+      (string? x) (symbol-name x raw?)
       (boolean? x) (if x "true" "false")
       (nan? x) "nan"
       (= x inf) "inf"
@@ -425,8 +425,19 @@
            (= (hd x) '%function))
       (> (precedence x) 0)))
 
+(define-global construct? (x)
+  (and (string? x)
+       (> (# x) 1)
+       (= (code x (edge x)) ?.)
+       (not (search x ".."))))
+
+(define-global compile-construct (x)
+  (if (construct? x)
+      (cat "new " (compile (clip x 0 (edge x))))
+    (compile x)))
+
 (define-global compile-call (f args parens?)
-  (let (f1 (compile f)
+  (let (f1 (compile-construct f)
         args1 (compile-args (stash* args)))
     (if (or parens? (parenthesize-call? f))
         (cat "(" f1 ")" args1)
@@ -693,15 +704,21 @@
 
 (define sandbox (context _G))
 
-(define run (code sandbox)
-  (vm .runInContext code (or sandbox _G)))
+(define run (code context options)
+  (vm .runInContext code (or context _G) options))
 
-(define-global eval (form)
+(define-global eval-options
+  (obj breakOnSigint: false timeout: 5000))
+
+(define eval (form context)
   (let code (compile (expand `(%set %result ,form)))
-    (run code)))
+    (run code context (_G .eval-options))))
 
 (define-global immediate-call? (x)
   (and (obj? x) (obj? (hd x)) (= (hd (hd x)) '%function)))
+
+(define-special %id (x)
+  (escape (symbol-name (inner x))))
 
 (define-special %call (f rest: args)
   (compile-call f args))
@@ -804,10 +821,8 @@
       (compile `((await ,(hd x)) ,@(tl x)))
     (cat "await (" (compile (hd x)) ")")))
 
-(define-special new x
-  (if (> (# x) 1)
-      (compile `((new ,(hd x)) ,@(tl x)))
-    (cat "new " (compile (hd x)))))
+(define-special new args
+  (cat "new " (compile args)))
 
 (define-special instanceof (a b)
   (cat "(" (compile a) " instanceof " (compile b) ")"))
@@ -819,8 +834,7 @@
   (cat (indentation) "throw " (compile x)))
 
 (define-special error (x) stmt: true
-  (let e (cat "throw " (compile `(new (Error ,x))))
-    (cat (indentation) e)))
+  (cat (indentation) (compile `(%throw (Error. ,x)))))
 
 (define-special %local (name value) stmt: true
   (let (id (compile name)

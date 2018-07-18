@@ -1202,7 +1202,7 @@ var create = (globals) => {
     var __body16 = cut(____id24, 0);
     add(_G.environment, {});
     map((m) => {
-      return _eval(join(["define-macro"], m));
+      return _G.compiler.eval(join(["define-macro"], m));
     }, __definitions);
     var ____x23 = join(["do"], macroexpand(__body16));
     drop(_G.environment);
@@ -1218,7 +1218,7 @@ var create = (globals) => {
       var ____id26 = __x25;
       var __name5 = ____id26[0];
       var __exp = ____id26[1];
-      return _eval(["define-symbol-macro", __name5, __exp]);
+      return _G.compiler.eval(["define-symbol-macro", __name5, __exp]);
     }, pair(__expansions));
     var ____x24 = join(["do"], macroexpand(__body17));
     drop(_G.environment);
@@ -1361,12 +1361,12 @@ var create = (globals) => {
   }});
   setenv("when-compiling", {["_stash"]: true, ["macro"]: (...body) => {
     var __body23 = unstash(body);
-    return _eval(join(["do"], __body23));
+    return _G.compiler.eval(join(["do"], __body23));
   }});
   setenv("during-compilation", {["_stash"]: true, ["macro"]: (...body) => {
     var __body24 = unstash(body);
     var __x30 = expand(join(["do"], __body24));
-    _eval(__x30);
+    _G.compiler.eval(__x30);
     return __x30;
   }});
   setenv("class", {["_stash"]: true, ["macro"]: (x, ...__r126) => {
@@ -1991,7 +1991,7 @@ var create = (globals) => {
     return __s3;
   };
   _G.indentation = indentation;
-  var reserved = {["="]: true, ["=="]: true, ["+"]: true, ["-"]: true, ["%"]: true, ["*"]: true, ["/"]: true, ["<"]: true, [">"]: true, ["<="]: true, [">="]: true, ["break"]: true, ["case"]: true, ["catch"]: true, ["class"]: true, ["const"]: true, ["continue"]: true, ["debugger"]: true, ["default"]: true, ["delete"]: true, ["do"]: true, ["else"]: true, ["eval"]: true, ["export"]: true, ["extends"]: true, ["finally"]: true, ["for"]: true, ["function"]: true, ["if"]: true, ["import"]: true, ["in"]: true, ["instanceof"]: true, ["new"]: true, ["return"]: true, ["switch"]: true, ["throw"]: true, ["try"]: true, ["typeof"]: true, ["var"]: true, ["void"]: true, ["while"]: true, ["with"]: true};
+  var reserved = {["="]: true, ["=="]: true, ["+"]: true, ["-"]: true, ["%"]: true, ["*"]: true, ["/"]: true, ["<"]: true, [">"]: true, ["<="]: true, [">="]: true, ["break"]: true, ["case"]: true, ["catch"]: true, ["class"]: true, ["const"]: true, ["continue"]: true, ["debugger"]: true, ["default"]: true, ["delete"]: true, ["do"]: true, ["else"]: true, ["export"]: true, ["extends"]: true, ["finally"]: true, ["for"]: true, ["function"]: true, ["if"]: true, ["import"]: true, ["in"]: true, ["instanceof"]: true, ["new"]: true, ["return"]: true, ["switch"]: true, ["throw"]: true, ["try"]: true, ["typeof"]: true, ["var"]: true, ["void"]: true, ["while"]: true, ["with"]: true};
   var reserved63 = (x) => {
     return has63(reserved, x);
   };
@@ -2814,14 +2814,15 @@ var create = (globals) => {
     return __sandbox;
   };
   var sandbox = context(_G);
-  var run = (code, sandbox, options) => {
-    return vm.runInContext(code, sandbox || _G);
+  var run = (code, context, options) => {
+    return vm.runInContext(code, context || _G, options);
   };
-  var _eval = (form) => {
+  evalOptions = {["breakOnSigint"]: false, ["timeout"]: 5000};
+  _G.evalOptions = evalOptions;
+  var eval = (form, context) => {
     var __code = compile(expand(["%set", "%result", form]));
-    return run(__code);
+    return run(__code, context, _G.evalOptions);
   };
-  _G["eval"] = _eval;
   var immediateCall63 = (x) => {
     return obj63(x) && obj63(hd(x)) && hd(hd(x)) === "%function";
   };
@@ -3204,7 +3205,7 @@ var create = (globals) => {
     while (____i57 < _35(____x106)) {
       var __x107 = ____x106[____i57];
       if (stringLiteral63(__x107)) {
-        __s111 = __s111 + _eval(__x107);
+        __s111 = __s111 + eval(__x107);
       } else {
         __s111 = __s111 + compile(__x107);
       }
@@ -3220,7 +3221,7 @@ var create = (globals) => {
     while (____i58 < _35(____x108)) {
       var __x109 = ____x108[____i58];
       if (stringLiteral63(__x109)) {
-        __s121 = __s121 + _eval(__x109);
+        __s121 = __s121 + eval(__x109);
       } else {
         __s121 = __s121 + compile(__x109);
       }
@@ -3238,7 +3239,7 @@ var create = (globals) => {
   __exports.context = context;
   __exports.sandbox = sandbox;
   __exports.run = run;
-  __exports["eval"] = _eval;
+  __exports.eval = eval;
   __exports.expand = expand;
   __exports.compile = compile;
   _G.compiler = __exports;
@@ -4228,7 +4229,7 @@ var create = (globals) => {
   var evalPrint = (form) => {
     var ____id103 = (() => {
       try {
-        return [true, compiler["eval"](form)];
+        return [true, compiler.eval(form)];
       }
       catch (__e114) {
         return [false, __e114];
