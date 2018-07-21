@@ -308,37 +308,60 @@
           (add o (literal k))
           (add o x))))))
 
-(define infix
+(define-global infix
   `((not: (js: !))
     (*: true /: true %: true)
     (cat: (js: +))
-    (+: true -: true)
+    (-: true)
+    (+: true)
     (<: true >: true <=: true >=: true)
     (=: (js: ===) ==: (js: ==))
     (and: (js: &&))
     (or: (js: ,"||"))))
 
-(define unary? (form)
+(define-global unary? (form)
   (and (two? form) (in? (hd form) '(not -))))
 
-(define index (k)
-  k)
+(define-global index (v l)
+  (for i (# l)
+    (let x (l [i])
+      (if (= v x) (return i))))
+  -1)
 
-(define precedence (form)
+(define-global replace-infix (form ops)
+  (if (atom? form) form
+    (let i (# form)
+      (each (k v) ops
+        (let j (index k form)
+          (when (> j 0)
+            (set i (min i j)))))
+      (if (< i (# form))
+          (list (at form i)
+                (parse-infix (cut form 0 i))
+                (parse-infix (cut form (+ i 1))))
+          (one? form) (hd form)
+        form))))
+
+(define-global parse-infix (form)
+  (step ops (reverse infix)
+    (set form (replace-infix form ops)))
+  form)
+
+(define-global precedence (form)
   (unless (or (atom? form) (unary? form))
     (each (k v) infix
       (let x (hd form)
-        (if (v [x]) (return (index k))))))
+        (if (v [x]) (return k)))))
   0)
 
-(define getop (op)
+(define-global getop (op)
   (find (fn (level)
           (let x (level [op])
             (if (= x true) op
                 (is? x) (x .js))))
         infix))
 
-(define infix? (x)
+(define-global infix? (x)
   (is? (getop x)))
 
 (define-global infix-operator? (x)
@@ -420,6 +443,20 @@
         (cat "(" f1 ")" args1)
       (cat f1 args1))))
 
+(define-global parse-balanced (xs (o open "(") (o close ")"))
+  (let i 0
+    (with l (fresh xs)
+      (while (some? xs)
+        (let x (hd xs)
+          (set xs (tl xs))
+          (if (= x open)
+              (let ((form ys) (parse-balanced xs open close))
+                (add l form)
+                (set xs ys))
+              (= x close)
+              (return (list l xs))
+            (do (add l x))))))))
+
 (define op-delims (parent child (o (right: true) (obj)))
   (if ((if right >= >)
        (precedence child)
@@ -461,7 +498,7 @@
     (let (tr (terminator stmt)
           ind (if stmt (indentation) "")
           form (if (atom? form) (compile-atom form)
-                   (infix? (hd form)) (compile-infix form)
+                   (infix-operator? form) (compile-infix form)
                  (compile-call (hd form) (tl form))))
       (cat ind form tr))))
 
@@ -486,7 +523,7 @@
 
 (define standalone? (form)
   (or (and (not (atom? form))
-           (not (infix? (hd form)))
+           (not (infix-operator? form))
            (not (literal? form))
            (not (= 'get (hd form)))
            (not (= '%statement (hd form)))
@@ -617,7 +654,7 @@
   (let form (map (fn (x) (lower x hoist)) form)
     (if (some? form) form)))
 
-(define pairwise? (form)
+(define-global pairwise? (form)
   (in? (hd form) '(< <= = >= >)))
 
 (define lower-pairwise (form)
@@ -630,7 +667,7 @@
     form))
 
 (define lower-infix? (form)
-  (and (infix? (hd form)) (> (# form) 3)))
+  (and (infix-operator? form) (> (# form) 3)))
 
 (define lower-infix (form hoist)
   (let (form (lower-pairwise form)
