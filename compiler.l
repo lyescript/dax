@@ -90,7 +90,7 @@
             (let-unique (x)
               (add args1 x)
               (join! bs (list v x))))))
-      (list args1 `(let ,bs ,@body)))))
+      (list args1 `(let ,bs ,@(cleave-infix body))))))
 
 (define quoting? (depth)
   (number? depth))
@@ -317,7 +317,8 @@
     (<: true >: true <=: true >=: true)
     (=: (js: ===) ==: (js: ==))
     (and: (js: &&))
-    (or: (js: ,"||"))))
+    (or: (js: ,"||"))
+    (:=: (js: =))))
 
 (define-global unary? (form)
   (and (two? form) (in? (hd form) '(not -))))
@@ -530,6 +531,23 @@
            (not (and (two? form) (accessor? (at form 1)))))
       (id-literal? form)))
 
+(define-global infix-run (form)
+  (let i -1
+    (for j (# form)
+      (when (= (% j 2) 1)
+        (unless (infix? (at form j))
+          (break))
+        (set i (+ j 1))))
+    (+ i 1)))
+
+(define-global cleave-infix (form)
+  (let i (infix-run form)
+    (if (> i 0)
+        (keep some?
+              (apply join (list (list (parse-infix (cut form 0 i)))
+                                (cleave-infix (cut form i)))))
+      form)))
+
 (define lower-do (args hoist stmt? tail?)
   (step x (almost args)
     (let-when e (lower x hoist stmt?)
@@ -695,6 +713,7 @@
       (if (= x 'do) (lower-do args hoist stmt? tail?)
           (= x '%call) (lower args hoist stmt? tail?)
           (= x '%set) (lower-set args hoist stmt? tail?)
+          (= x ':=) (lower-set args hoist stmt? tail?)
           (= x '%if) (lower-if args hoist stmt? tail?)
           (= x '%try) (lower-try args hoist tail?)
           (= x '%condition-case) (lower-condition-case args hoist stmt? tail?)
