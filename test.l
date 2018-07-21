@@ -139,19 +139,19 @@
 
 (define-test numeric
   (test= 4 (+ 2 2))
-  (test= 0 (apply * '(0 0)))
-  (test= 4 (apply + '(2 2)))
-  (test= 0 (apply + (list)))
+  (test= 0 (apply #'* '(0 0)))
+  (test= 4 (apply #'+ '(2 2)))
+  (test= 0 (apply #'+ (list)))
   (test= 18 18.00)
   (test= 4 (- 7 3))
-  (test= 4 (apply - '(7 3)))
-  (test= 0 (apply - (list)))
+  (test= 4 (apply #'- '(7 3)))
+  (test= 0 (apply #'- (list)))
   (test= 5.0 (/ 10 2))
-  (test= 5.0 (apply / '(10 2)))
-  (test= 1 (apply / (list)))
+  (test= 5.0 (apply #'/ '(10 2)))
+  (test= 1 (apply #'/ (list)))
   (test= 6 (* 2 3.00))
-  (test= 6 (apply * '(2 3.00)))
-  (test= 1 (apply * (list)))
+  (test= 6 (apply #'* '(2 3.00)))
+  (test= 1 (apply #'* (list)))
   (test= true (> 2.01 2))
   (test= true (>= 5.0 5.0))
   (test= true (> 2.1e3 2000))
@@ -177,12 +177,12 @@
 (define-test infix
   (let (l '(1 1 2 3)
         (a b c d) l)
-    (test= true (apply <= l))
-    (test= false (apply < l))
-    (test= false (apply = l))
-    (test= true (call = 1 a b))
-    (test= false (apply > (reverse l)))
-    (test= true (apply >= (reverse l)))
+    (test= true (apply #'<= l))
+    (test= false (apply #'< l))
+    (test= false (apply #'= l))
+    (test= true (call #'= 1 a b))
+    (test= false (apply #'> (reverse l)))
+    (test= true (apply #'>= (reverse l)))
     (test= true (<= a b c d))
     (test= true (<= a b c d))
     (test= false (< a b c d))
@@ -1063,14 +1063,14 @@ c"
   (test= 4 (apply (fn (a b) (+ a b)) '(2 2)))
   (test= '(2 2) (apply (fn a a) '(2 2)))
   (test= 42 (apply (fn ((foo: true)) foo) (list (list foo: 42))))
-  (test= 116 (apply + 1 5 '(100 10))))
+  (test= 116 (apply #'+ 1 5 '(100 10))))
 
 (define-test eval
   (let eval (compiler .eval)
     (test= 4 (eval '(+ 2 2)))
     (test= 5 (eval '(let a 3 (+ 2 a))))
     (test= 9 (eval '(do (define x 7) (+ x 2))))
-    (test= 6 (eval '(apply + '(1 2 3))))))
+    (test= 6 (eval '(apply #'+ '(1 2 3))))))
 
 (define-test call
   (let f (fn () 42)
@@ -1123,7 +1123,7 @@ c"
 
 (define-test defaults
   (test= 42 ((fn ((o a 42)) a)))
-  (test= 42 ((fn ((o a (apply + '(41 1)))) a)))
+  (test= 42 ((fn ((o a (apply #'+ '(41 1)))) a)))
   (let i 0
     (test= 1 ((fn ((o a ((fn () (inc i))))) i)))
     (test= 2 ((fn ((o a (inc i))) i)))

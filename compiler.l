@@ -651,7 +651,11 @@
     (add hoist `(,kind ,name ,args ,(lower-body body true)))))
 
 (define lower-call (form hoist)
-  (let form (map (fn (x) (lower x hoist)) form)
+  (let (form (if (and (infix? (at form 1))
+                      (> (# form) 2))
+                 (parse-infix form)
+                form)
+        form (map (fn (x) (lower x hoist)) form))
     (if (some? form) form)))
 
 (define-global pairwise? (form)
@@ -731,6 +735,9 @@
 (define-special declare (args)
   (declare (stmt true) (tr true))
   "")
+
+(define-special function (x)
+  (compile x))
 
 (define-special %call (f rest: args)
   (compile-call f args))
