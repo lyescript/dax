@@ -50,7 +50,7 @@
 
 (define-global compile-file (path)
   (let (body (expand-file path)
-        form (compiler .expand `(do ,@body)))
+        form (compiler .expand body))
     (compiler .compile form stmt: true)))
 
 (define-global load (path)
