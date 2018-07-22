@@ -3668,7 +3668,7 @@ var create = (globals) => {
   _G.expandFile = expandFile;
   var compileFile = (path) => {
     var __body55 = expandFile(path);
-    var __form11 = compiler.expand(join(["do"], __body55));
+    var __form11 = compiler.expand(__body55);
     return compiler.compile(__form11, {["_stash"]: true, ["stmt"]: true});
   };
   _G.compileFile = compileFile;
