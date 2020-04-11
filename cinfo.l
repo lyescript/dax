@@ -352,13 +352,17 @@
     (message "%s" msg)
     (recursive-edit minibuffer (obj complete: f prompt: (buffer-string minibuffer)))))
 
-(define-global render (buffer)
-  (rl .cursor-to (process .stdout) 0 0)
+(define-global render-to-string (buffer)
   (let (b (or buffer (current-buffer))
         b (if (= b minibuffer) ((last recursive-buffers) .buffer) b)
         s (render-buffer b (- (rows) 2) (cols)))
     (cat! s (render-buffer minibuffer 2 (cols)))
     (set s (clip s 0 (edge s)))
+    s))
+
+(define-global render (buffer)
+  (rl .cursor-to (process .stdout) 0 0)
+  (let s (render-to-string buffer)
     (process .stdout .write s)
     nil))
 
